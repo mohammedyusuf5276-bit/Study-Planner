@@ -98,7 +98,7 @@
   let stopwatchSeconds = 0;
   let timerRunning = false;
   let selectedFocusRating = 5;
-  let timerStartTimestamp = null;
+  let timerStudiedSeconds = 0;
 
   // View States
   let activeTab = 'tab-dashboard';
@@ -609,6 +609,7 @@
     const subOptions = (store.subjects || []).map(s => `<option value="${escapeHtml(s.name)}">${escapeHtml(s.name)}</option>`).join('');
     subSelect.innerHTML = subOptions;
     manualSubSelect.innerHTML = subOptions;
+    document.getElementById('materialSubject').innerHTML = subOptions;
 
     // Populate task select based on selected subject
     const updateTasksForSubject = () => {
@@ -641,7 +642,6 @@
   function startTimer() {
     if (timerRunning) return;
     timerRunning = true;
-    timerStartTimestamp = Date.now();
 
     document.getElementById('timerStartBtn').disabled = true;
     document.getElementById('timerPauseBtn').disabled = false;
@@ -651,6 +651,9 @@
     document.getElementById('timerStatusLabel').textContent = `Focus sprint active for ${subject}... Minimize all tabs!`;
 
     timerInterval = setInterval(() => {
+      if (timerMode === 'stopwatch' || ((timerMode !== 'short-break' && timerMode !== 'long-break') && timerSecondsLeft > 0)) {
+        timerStudiedSeconds++;
+      }
       if (timerMode === 'stopwatch') {
         stopwatchSeconds++;
         updateTimerDisplay();
@@ -682,6 +685,7 @@
 
   function resetTimer() {
     pauseTimer();
+    timerStudiedSeconds = 0;
     document.getElementById('timerStartBtnText').textContent = 'Start Focus';
     document.getElementById('timerCompleteBtn').disabled = true;
 
@@ -698,15 +702,10 @@
   function finishTimerSession() {
     pauseTimer();
 
-    let minutesStudied = 0;
-    if (timerMode === 'stopwatch') {
-      minutesStudied = Math.round(stopwatchSeconds / 60);
-    } else {
-      minutesStudied = Math.round((timerDurationSeconds - timerSecondsLeft) / 60);
-    }
-
-    if (minutesStudied < 1) {
-      minutesStudied = 1; // minimum 1 min
+    const minutesStudied = Math.round((timerStudiedSeconds / 60) * 100) / 100;
+    if (minutesStudied <= 0) {
+      document.getElementById('timerStatusLabel').textContent = 'No active study time to save yet.';
+      return;
     }
 
     const subject = document.getElementById('timerSubjectSelect').value;
@@ -740,6 +739,21 @@
     resetTimer();
     renderAll();
     alert(`🎉 Awesome! Logged ${minutesStudied} minutes to ${subject}.`);
+  }
+
+  function renderMaterials() {
+    const list = document.getElementById('materialsList');
+    if (!list) return;
+    const materials = store.study_materials || [];
+    if (!materials.length) {
+      list.innerHTML = '<div class="empty-state"><div class="empty-icon">📖</div><h4>No study material yet</h4><p>Add a useful link or note above to build your library.</p></div>';
+      return;
+    }
+    list.innerHTML = materials.map(item => `<article class="material-item"><div><span class="tag tag-accent">${escapeHtml(item.subject)}</span><h4>${escapeHtml(item.title)}</h4>${item.notes ? `<p>${escapeHtml(item.notes)}</p>` : ''}</div><div class="material-actions">${item.url ? `<a class="btn btn-sm btn-outline" href="${escapeHtml(item.url)}" target="_blank" rel="noopener noreferrer">Open</a>` : ''}<button class="btn btn-sm btn-danger-outline" data-delete-material="${escapeHtml(item.id)}">Remove</button></div></article>`).join('');
+    list.querySelectorAll('[data-delete-material]').forEach(button => button.addEventListener('click', () => {
+      store.study_materials = materials.filter(item => item.id !== button.dataset.deleteMaterial);
+      saveData(); renderMaterials();
+    }));
   }
 
   // ================= Analytics & Charts Renderer =================
@@ -982,6 +996,7 @@
     renderDashboard();
     renderPlanner();
     renderAnalytics();
+    renderMaterials();
   }
 
   function escapeHtml(str) {
@@ -1134,6 +1149,23 @@
 
       document.getElementById('manualNotesInput').value = '';
       alert(`✓ Recorded ${(mins / 60).toFixed(1)} hours for ${sub}!`);
+    });
+
+    document.getElementById('materialForm').addEventListener('submit', e => {
+      e.preventDefault();
+      const url = document.getElementById('materialUrl').value.trim();
+      if (url && !/^https?:\/\//i.test(url)) return;
+      store.study_materials = store.study_materials || [];
+      store.study_materials.unshift({
+        id: generateId('material'),
+        title: document.getElementById('materialTitle').value.trim(),
+        subject: document.getElementById('materialSubject').value,
+        url,
+        notes: document.getElementById('materialNotes').value.trim()
+      });
+      saveData();
+      e.target.reset();
+      renderMaterials();
     });
 
     // Export / Import JSON

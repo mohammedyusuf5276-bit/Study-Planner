@@ -75,6 +75,9 @@
       <button class="nav-tab active" data-tab="tab-dashboard" role="tab">
         <span class="tab-icon">📊</span> Dashboard
       </button>
+      <button class="nav-tab" data-tab="tab-materials" role="tab">
+        <span class="tab-icon">📚</span> Study Material
+      </button>
       <button class="nav-tab" data-tab="tab-planner" role="tab">
         <span class="tab-icon">📋</span> Planner & Tasks
       </button>
@@ -175,6 +178,24 @@
               <!-- Dynamically populated -->
             </div>
           </div>
+        </div>
+      </section>
+
+      <!-- ================= STUDY MATERIAL LIBRARY ================= -->
+      <section id="tab-materials" class="tab-panel">
+        <div class="content-card">
+          <div class="card-header">
+            <div class="card-title"><span class="title-icon">📚</span><h3>Study Material Library</h3></div>
+          </div>
+          <p class="card-description">Keep useful links and notes organized by subject.</p>
+          <form id="materialForm" class="material-form">
+            <div class="form-group"><label for="materialTitle">Title</label><input id="materialTitle" class="form-input" required maxlength="120" placeholder="e.g. Introduction to React"></div>
+            <div class="form-group"><label for="materialSubject">Subject</label><select id="materialSubject" class="form-select" required></select></div>
+            <div class="form-group"><label for="materialUrl">Link (optional)</label><input id="materialUrl" class="form-input" type="url" placeholder="https://..."></div>
+            <div class="form-group"><label for="materialNotes">Notes (optional)</label><input id="materialNotes" class="form-input" maxlength="500" placeholder="What should you remember?"></div>
+            <button class="btn btn-primary" type="submit">Add Material</button>
+          </form>
+          <div id="materialsList" class="materials-list"></div>
         </div>
       </section>
 
