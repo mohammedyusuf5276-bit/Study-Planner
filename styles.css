@@ -377,6 +377,154 @@ body {
   color: var(--text-main);
 }
 
+/* ================= Dynamic Card Theme Classes (>=50% Green, <50% Bright Red) ================= */
+
+/* Green Theme (>= 50%) */
+.theme-card-green {
+  background: linear-gradient(135deg, #059669 0%, #10b981 50%, #0d9488 100%) !important;
+  border-radius: 22px !important;
+  border: 1px solid rgba(255, 255, 255, 0.25) !important;
+  box-shadow: 0 10px 25px -5px rgba(16, 185, 129, 0.45), 0 8px 10px -6px rgba(16, 185, 129, 0.3) !important;
+  color: #ffffff !important;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.25s ease, box-shadow 0.25s ease, background 0.35s ease;
+}
+
+.theme-card-green:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 14px 30px -5px rgba(16, 185, 129, 0.6) !important;
+}
+
+.theme-card-green::before {
+  content: '';
+  position: absolute;
+  top: -40px;
+  right: -40px;
+  width: 110px;
+  height: 110px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.25), transparent 70%);
+  pointer-events: none;
+}
+
+/* Bright Red Theme (< 50%) */
+.theme-card-red {
+  background: linear-gradient(135deg, #b91c1c 0%, #ef4444 50%, #dc2626 100%) !important;
+  border-radius: 22px !important;
+  border: 1px solid rgba(255, 255, 255, 0.25) !important;
+  box-shadow: 0 10px 25px -5px rgba(239, 68, 68, 0.5), 0 8px 10px -6px rgba(220, 38, 38, 0.35) !important;
+  color: #ffffff !important;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.25s ease, box-shadow 0.25s ease, background 0.35s ease;
+}
+
+.theme-card-red:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 14px 30px -5px rgba(239, 68, 68, 0.65) !important;
+}
+
+.theme-card-red::before {
+  content: '';
+  position: absolute;
+  top: -40px;
+  right: -40px;
+  width: 110px;
+  height: 110px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.25), transparent 70%);
+  pointer-events: none;
+}
+
+/* Glass Pill Badge */
+.badge-glass-pill {
+  background: rgba(255, 255, 255, 0.24) !important;
+  color: #ffffff !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.5) !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.06em !important;
+  padding: 0.25rem 0.65rem !important;
+  border-radius: 9999px !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+/* Glowing White Progress Bar */
+.bar-glass-white {
+  background: linear-gradient(90deg, #ffffff, rgba(255, 255, 255, 0.75)) !important;
+  box-shadow: 0 0 12px rgba(255, 255, 255, 0.75) !important;
+}
+
+.stat-label-light {
+  color: rgba(255, 255, 255, 0.88) !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.08em !important;
+}
+
+.stat-value-light {
+  color: #ffffff !important;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.2) !important;
+}
+
+.stat-unit-light {
+  color: rgba(255, 255, 255, 0.75) !important;
+}
+
+.stat-subtext-light {
+  color: rgba(255, 255, 255, 0.9) !important;
+  font-weight: 600 !important;
+}
+
+.stat-progress-glass {
+  background-color: rgba(0, 0, 0, 0.22) !important;
+  border-radius: 9999px !important;
+}
+
+/* Custom Active Streak Card with Curved Edges and Sunset Gradient */
+.stat-card-active {
+  background: linear-gradient(135deg, #c2410c 0%, #ea580c 50%, #f59e0b 100%) !important;
+  border-radius: 22px !important;
+  border: 1px solid rgba(255, 255, 255, 0.25) !important;
+  box-shadow: 0 10px 25px -5px rgba(234, 88, 12, 0.45), 0 8px 10px -6px rgba(234, 88, 12, 0.3) !important;
+  color: #ffffff !important;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.stat-card-active:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 14px 30px -5px rgba(234, 88, 12, 0.6) !important;
+}
+
+.stat-card-active::before {
+  content: '';
+  position: absolute;
+  top: -40px;
+  right: -40px;
+  width: 110px;
+  height: 110px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.25), transparent 70%);
+  pointer-events: none;
+}
+
+.badge-streak-active {
+  background: rgba(255, 255, 255, 0.22) !important;
+  color: #ffffff !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.5) !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.06em !important;
+  padding: 0.25rem 0.65rem !important;
+  border-radius: 9999px !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+.bar-streak-active {
+  background: linear-gradient(90deg, #ffffff, #fed7aa) !important;
+  box-shadow: 0 0 12px rgba(255, 255, 255, 0.7) !important;
+}
+
 /* Dashboard Split Grid */
 .dashboard-split {
   display: grid;
@@ -1191,4 +1339,603 @@ body {
 
 .hidden {
   display: none !important;
+}
+
+/* ===================================================================
+   Opening Special Effects: Aurora Glow, Fireworks Canvas & Welcome Banner
+   =================================================================== */
+
+/* Ambient Aurora Gradient at page top */
+.ambient-aurora {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 280px;
+  background: radial-gradient(circle at 50% -20%, rgba(59, 130, 246, 0.18), rgba(139, 92, 246, 0.12), transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+  filter: blur(40px);
+}
+
+[data-theme="dark"] .ambient-aurora {
+  background: radial-gradient(circle at 50% -20%, rgba(59, 130, 246, 0.25), rgba(139, 92, 246, 0.18), transparent 70%);
+}
+
+/* Celebration Canvas Overlay (clicks pass through) */
+.fx-canvas {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 9999;
+}
+
+/* Welcome Splash Banner */
+.welcome-banner {
+  margin: 1rem 0 0.5rem 0;
+  padding: 1rem 1.25rem;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(139, 92, 246, 0.1));
+  border: 1px solid rgba(59, 130, 246, 0.25);
+  border-radius: var(--radius-lg);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  backdrop-filter: blur(8px);
+  animation: slideDownIntro 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+  box-shadow: 0 4px 15px rgba(59, 130, 246, 0.08);
+}
+
+@keyframes slideDownIntro {
+  from {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.welcome-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.welcome-badge {
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: var(--primary);
+  text-transform: uppercase;
+}
+
+.welcome-text h3 {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--text-main);
+}
+
+.welcome-text p {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.welcome-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.welcome-close {
+  background: none;
+  border: none;
+  font-size: 1.3rem;
+  cursor: pointer;
+  color: var(--text-muted);
+  padding: 0.2rem 0.4rem;
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-fast);
+}
+
+.welcome-close:hover {
+  background-color: var(--bg-secondary);
+  color: var(--text-main);
+}
+
+/* Staggered card entry animations */
+.stat-card {
+  animation: cardFadeUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.stat-card:nth-child(1) { animation-delay: 0.05s; }
+.stat-card:nth-child(2) { animation-delay: 0.12s; }
+.stat-card:nth-child(3) { animation-delay: 0.19s; }
+.stat-card:nth-child(4) { animation-delay: 0.26s; }
+
+@keyframes cardFadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ===================================================================
+   Interactive Fidget Zen Pod
+   =================================================================== */
+
+.fidget-wrapper {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 99999;
+  display: flex;
+  flex-direction: column-reverse; /* Expands upwards above the button */
+  align-items: flex-end;
+  gap: 12px;
+}
+
+/* Fidget Lock Overlay & Status Badge */
+.fidget-lock-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.2rem 0.5rem;
+  border-radius: var(--radius-full);
+  background-color: var(--bg-secondary);
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  cursor: pointer;
+  border: 1px solid var(--border-color);
+}
+
+.fidget-lock-badge.active-lock {
+  background-color: var(--danger-subtle);
+  color: var(--danger);
+  border-color: var(--danger-border);
+}
+
+.fidget-lock-overlay {
+  padding: 1.75rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.5rem;
+}
+
+.lock-big-icon {
+  font-size: 2.8rem;
+  margin-bottom: 0.25rem;
+  animation: lockBounce 2s ease-in-out infinite;
+}
+
+@keyframes lockBounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+
+.lock-countdown {
+  font-family: var(--font-mono);
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: var(--danger);
+  background-color: var(--bg-secondary);
+  padding: 0.3rem 1rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+  margin: 0.25rem 0;
+}
+
+.lock-setting-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 0.45rem 0.65rem;
+  background-color: var(--bg-secondary);
+  border-radius: var(--radius-md);
+  font-size: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+/* Floating Launch Pill Button */
+.fidget-toggle-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.7rem 1.2rem;
+  border-radius: var(--radius-full);
+  background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+  color: white;
+  border: none;
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4), 0 2px 6px rgba(0, 0, 0, 0.15);
+  position: relative;
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease;
+}
+
+.fidget-toggle-btn:hover {
+  transform: translateY(-2px) scale(1.04);
+  box-shadow: 0 8px 25px rgba(139, 92, 246, 0.5);
+}
+
+.fidget-icon {
+  font-size: 1.25rem;
+  animation: gentleSpin 12s linear infinite;
+}
+
+@keyframes gentleSpin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.fidget-pulse-ring {
+  position: absolute;
+  inset: -3px;
+  border-radius: var(--radius-full);
+  border: 2px solid rgba(139, 92, 246, 0.5);
+  animation: pulseAura 2s ease-out infinite;
+  pointer-events: none;
+}
+
+@keyframes pulseAura {
+  0% { transform: scale(0.95); opacity: 0.9; }
+  100% { transform: scale(1.25); opacity: 0; }
+}
+
+/* Fidget Pod Window */
+.fidget-pod {
+  width: 320px;
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg), 0 0 30px rgba(59, 130, 246, 0.15);
+  margin-bottom: 12px;
+  overflow: hidden;
+  animation: podOpen 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+  backdrop-filter: blur(16px);
+}
+
+@keyframes podOpen {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.fidget-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.85rem 1rem;
+  background: linear-gradient(135deg, var(--bg-secondary), var(--bg-surface));
+  border-bottom: 1px solid var(--border-color);
+}
+
+.fidget-title {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.fidget-title h4 {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.fidget-close-btn {
+  background: none;
+  border: none;
+  font-size: 1.2rem;
+  cursor: pointer;
+  color: var(--text-muted);
+  border-radius: var(--radius-sm);
+  padding: 0.1rem 0.3rem;
+}
+
+.fidget-close-btn:hover {
+  color: var(--text-main);
+}
+
+.fidget-tabs {
+  display: flex;
+  background-color: var(--bg-secondary);
+  padding: 0.25rem;
+  gap: 0.2rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.fidget-tab {
+  flex: 1;
+  padding: 0.4rem 0.2rem;
+  background: none;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-family: inherit;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  text-align: center;
+}
+
+.fidget-tab.active {
+  background-color: var(--bg-surface);
+  color: var(--primary);
+  box-shadow: var(--shadow-sm);
+}
+
+.fidget-panel {
+  display: none;
+  padding: 1.25rem 1rem;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.fidget-panel.active {
+  display: flex;
+}
+
+.fidget-hint {
+  font-size: 0.725rem;
+  color: var(--text-muted);
+  margin-top: 0.75rem;
+}
+
+/* ---------------- 1. Fidget Spinner ---------------- */
+.spinner-container {
+  width: 150px;
+  height: 150px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+}
+
+.spinner-container:active {
+  cursor: grabbing;
+}
+
+.spinner-rotor {
+  width: 130px;
+  height: 130px;
+  position: relative;
+  transform-origin: center center;
+  will-change: transform;
+}
+
+.spinner-center {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 36px;
+  height: 36px;
+  margin: -18px 0 0 -18px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #f8fafc, #94a3b8);
+  border: 3px solid #3b82f6;
+  box-shadow: 0 0 10px rgba(59, 130, 246, 0.6), inset 0 0 5px rgba(0, 0, 0, 0.3);
+  z-index: 5;
+}
+
+.spinner-blade {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 38px;
+  height: 52px;
+  margin-left: -19px;
+  background: linear-gradient(180deg, #3b82f6, #8b5cf6);
+  border-radius: 20px;
+  transform-origin: center top;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2), inset 0 2px 4px rgba(255, 255, 255, 0.3);
+}
+
+.spinner-blade::after {
+  content: '';
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  width: 20px;
+  height: 20px;
+  margin-left: -10px;
+  border-radius: 50%;
+  background-color: var(--bg-surface);
+  border: 2px solid rgba(255, 255, 255, 0.8);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.spinner-blade.blade-1 {
+  transform: rotate(0deg);
+}
+
+.spinner-blade.blade-2 {
+  transform: rotate(120deg);
+}
+
+.spinner-blade.blade-3 {
+  transform: rotate(240deg);
+}
+
+.spinner-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+
+.spinner-stats {
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--primary);
+  min-width: 65px;
+}
+
+/* ---------------- 2. Bubble Wrap Poppers ---------------- */
+.poppers-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  padding: 0.5rem;
+}
+
+.bubble-pop {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 2px solid #93c5fd;
+  background: radial-gradient(circle at 35% 35%, #ffffff, #60a5fa 70%, #2563eb);
+  cursor: pointer;
+  box-shadow: 0 4px 6px rgba(59, 130, 246, 0.3), inset 0 -2px 4px rgba(0, 0, 0, 0.2);
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+  user-select: none;
+}
+
+.bubble-pop:hover:not(.popped) {
+  transform: scale(1.08);
+}
+
+.bubble-pop:active:not(.popped) {
+  transform: scale(0.92);
+}
+
+.bubble-pop.popped {
+  background: radial-gradient(circle at 50% 50%, var(--bg-secondary), var(--border-color));
+  border-color: var(--border-color);
+  box-shadow: inset 0 3px 5px rgba(0, 0, 0, 0.2);
+  transform: scale(0.88);
+  cursor: default;
+  opacity: 0.6;
+}
+
+.poppers-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  margin-top: 0.75rem;
+  padding: 0 0.5rem;
+}
+
+.poppers-count {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+/* ---------------- 3. Mechanical Switch Clicker ---------------- */
+.switch-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.5rem 0;
+}
+
+.mechanical-switch {
+  width: 90px;
+  height: 90px;
+  border-radius: 18px;
+  background: linear-gradient(180deg, #3b82f6, #1d4ed8);
+  border: 3px solid #1e40af;
+  color: white;
+  font-family: var(--font-mono);
+  font-size: 1.1rem;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 8px 0 #1e3a8a, 0 12px 16px rgba(0, 0, 0, 0.2);
+  transition: all 0.08s ease;
+  position: relative;
+  outline: none;
+  user-select: none;
+}
+
+.mechanical-switch:hover {
+  filter: brightness(1.08);
+}
+
+.mechanical-switch:active, .mechanical-switch.pressed {
+  transform: translateY(6px);
+  box-shadow: 0 2px 0 #1e3a8a, 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.switch-cap {
+  display: block;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.switch-counter {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+/* ---------------- 4. 4-7-8 Breathing Guide ---------------- */
+.breathe-wrapper {
+  height: 150px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+
+.breathe-orb {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #8b5cf6, #3b82f6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 700;
+  font-size: 0.85rem;
+  box-shadow: 0 0 25px rgba(139, 92, 246, 0.6);
+  animation: breatheCycle 16s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  user-select: none;
+}
+
+@keyframes breatheCycle {
+  0%, 100% {
+    transform: scale(0.85);
+    box-shadow: 0 0 15px rgba(59, 130, 246, 0.4);
+  }
+  25% {
+    /* Inhale complete */
+    transform: scale(1.4);
+    box-shadow: 0 0 35px rgba(139, 92, 246, 0.8);
+  }
+  50% {
+    /* Hold */
+    transform: scale(1.4);
+    box-shadow: 0 0 35px rgba(16, 185, 129, 0.8);
+  }
+  75% {
+    /* Exhale complete */
+    transform: scale(0.85);
+    box-shadow: 0 0 15px rgba(59, 130, 246, 0.4);
+  }
 }

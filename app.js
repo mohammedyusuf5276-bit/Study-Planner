@@ -362,7 +362,7 @@
     const todayGoal = (store.daily_goals && store.daily_goals[getTodayDate()]) ? store.daily_goals[getTodayDate()].target_hours : 3.0;
     const todayPct = Math.min(100, Math.round((todayHours / todayGoal) * 100));
 
-    document.getElementById('dashTodayHours').innerHTML = `${todayHours}<span class="stat-unit">h</span>`;
+    document.getElementById('dashTodayHours').innerHTML = `${todayHours}<span class="stat-unit stat-unit-light">h</span>`;
     document.getElementById('dashTodayPct').textContent = `${todayPct}%`;
     document.getElementById('dashTodayBar').style.width = `${todayPct}%`;
     document.getElementById('dashTodayTarget').textContent = `Target: ${todayGoal} hours`;
@@ -372,20 +372,46 @@
     const weeklyTarget = (store.subjects || []).reduce((acc, s) => acc + (Number(s.target_weekly_hours) || 0), 0);
     const weekPct = weeklyTarget > 0 ? Math.min(100, Math.round((weekHours / weeklyTarget) * 100)) : 0;
 
-    document.getElementById('dashWeekHours').innerHTML = `${weekHours}<span class="stat-unit">h</span>`;
+    document.getElementById('dashWeekHours').innerHTML = `${weekHours}<span class="stat-unit stat-unit-light">h</span>`;
     document.getElementById('dashWeekPct').textContent = `${weekPct}%`;
     document.getElementById('dashWeekBar').style.width = `${weekPct}%`;
     document.getElementById('dashWeekTarget').textContent = `Weekly Target: ${weeklyTarget} hours`;
 
     // Efficiency
     const eff = calculateEfficiency();
-    document.getElementById('dashEffScore').innerHTML = `${eff.score}<span class="stat-unit">/100</span>`;
+    document.getElementById('dashEffScore').innerHTML = `${eff.score}<span class="stat-unit stat-unit-light">/100</span>`;
     document.getElementById('dashEffBar').style.width = `${eff.score}%`;
-    document.getElementById('dashFocusAvg').textContent = `Avg Focus: ${eff.avgFocus} ⭐`;
+
+    // Helper: Dynamic Color Theme (Bright Red if <50%, Rich Green if >=50%)
+    function applyDynamicCardTheme(cardId, percentage) {
+      const card = document.getElementById(cardId);
+      if (!card) return;
+      if (percentage < 50) {
+        card.classList.remove('theme-card-green');
+        card.classList.add('theme-card-red');
+      } else {
+        card.classList.remove('theme-card-red');
+        card.classList.add('theme-card-green');
+      }
+    }
+
+    // Apply color logic to Today's Study, Weekly Target, and Efficiency
+    applyDynamicCardTheme('cardTodayStudy', todayPct);
+    applyDynamicCardTheme('cardWeekTarget', weekPct);
+    applyDynamicCardTheme('cardEfficiency', eff.score);
+
+    const effRatingEl = document.getElementById('dashEffRating');
+    if (effRatingEl) {
+      effRatingEl.textContent = eff.score >= 50 ? 'HIGH' : 'LOW';
+    }
 
     const streak = calculateStreak();
-    document.getElementById('dashStreakVal').innerHTML = `🔥 ${streak.current}<span class="stat-unit">days</span>`;
+    document.getElementById('dashStreakVal').innerHTML = `🔥 ${streak.current}<span class="stat-unit stat-unit-light">days</span>`;
     document.getElementById('dashBestStreak').textContent = `Best Record: ${streak.longest} days`;
+    const streakBadge = document.getElementById('dashStreakBadge');
+    if (streakBadge) {
+      streakBadge.textContent = 'ACTIVE';
+    }
 
     // Recommendations list
     const recContainer = document.getElementById('recommendationsList');
@@ -1121,28 +1147,538 @@
       downloadAnchor.remove();
     });
 
-    document.getElementById('importDataFileInput').addEventListener('change', (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        try {
-          const imported = JSON.parse(event.target.result);
-          if (imported && imported.subjects && imported.tasks) {
-            store = imported;
-            saveData();
-            setupTimerSelects();
-            renderAll();
-            alert('✓ Study data successfully imported!');
+    // ================= Opening Celebration Effects =================
+    initOpeningFX();
+
+    // ================= Interactive Fidget Zen Pod =================
+    initFidgetPod();
+  }
+
+  // ================= Opening Effects Logic =================
+  function initOpeningFX() {
+    // 1. Welcome banner controls
+    const welcomeBanner = document.getElementById('welcomeBanner');
+    const closeWelcomeBtn = document.getElementById('closeWelcomeBtn');
+    const quickStartBtn = document.getElementById('quickStartSessionBtn');
+
+    if (closeWelcomeBtn && welcomeBanner) {
+      closeWelcomeBtn.addEventListener('click', () => {
+        welcomeBanner.style.transition = 'all 0.3s ease';
+        welcomeBanner.style.opacity = '0';
+        welcomeBanner.style.transform = 'translateY(-15px) scale(0.96)';
+        setTimeout(() => welcomeBanner.classList.add('hidden'), 300);
+      });
+    }
+
+    if (quickStartBtn) {
+      quickStartBtn.addEventListener('click', () => {
+        switchTab('tab-timer');
+        // Ensure 25m Pomodoro is selected and active
+        timerMode = 'pomodoro';
+        timerDurationSeconds = 25 * 60;
+        timerSecondsLeft = 25 * 60;
+        updateTimerDisplay();
+        document.querySelectorAll('.timer-mode-btn').forEach(b => {
+          b.classList.toggle('active', b.getAttribute('data-mode') === 'pomodoro');
+        });
+        startTimer();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+    }
+
+    // 2. Celebratory Canvas Particle Sparkles
+    const canvas = document.getElementById('fxCanvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    let width = (canvas.width = window.innerWidth);
+    let height = (canvas.height = window.innerHeight);
+
+    window.addEventListener('resize', () => {
+      width = canvas.width = window.innerWidth;
+      height = canvas.height = window.innerHeight;
+    });
+
+    const colors = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#67e8f9'];
+    const particles = [];
+    const particleCount = 65;
+
+    // Launch particles from center top
+    for (let i = 0; i < particleCount; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const speed = Math.random() * 8 + 3;
+      particles.push({
+        x: width / 2 + (Math.random() - 0.5) * 150,
+        y: height * 0.25 + (Math.random() - 0.5) * 50,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed - 2,
+        size: Math.random() * 5 + 3,
+        color: colors[Math.floor(Math.random() * colors.length)],
+        alpha: 1.0,
+        decay: Math.random() * 0.012 + 0.008,
+        gravity: 0.18,
+        rotation: Math.random() * Math.PI,
+        rotationSpeed: (Math.random() - 0.5) * 0.2
+      });
+    }
+
+    let animationFrameId = null;
+    let startTime = Date.now();
+
+    function renderFX() {
+      const elapsed = Date.now() - startTime;
+      ctx.clearRect(0, 0, width, height);
+
+      let alive = false;
+      for (let i = 0; i < particles.length; i++) {
+        const p = particles[i];
+        if (p.alpha <= 0) continue;
+        alive = true;
+
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vy += p.gravity;
+        p.vx *= 0.98;
+        p.alpha -= p.decay;
+        p.rotation += p.rotationSpeed;
+
+        ctx.save();
+        ctx.globalAlpha = Math.max(0, p.alpha);
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.rotation);
+        ctx.fillStyle = p.color;
+
+        // Draw sparkle diamond/star
+        ctx.beginPath();
+        ctx.moveTo(0, -p.size);
+        ctx.lineTo(p.size * 0.7, 0);
+        ctx.lineTo(0, p.size);
+        ctx.lineTo(-p.size * 0.7, 0);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+      }
+
+      if (alive && elapsed < 4000) {
+        animationFrameId = requestAnimationFrame(renderFX);
+      } else {
+        ctx.clearRect(0, 0, width, height);
+      }
+    }
+
+    renderFX();
+  }
+
+  // ================= Interactive Fidget Zen Pod Logic =================
+  function initFidgetPod() {
+    const toggleBtn = document.getElementById('fidgetToggleBtn');
+    const closeBtn = document.getElementById('fidgetCloseBtn');
+    const pod = document.getElementById('fidgetPod');
+    const lockOverlay = document.getElementById('fidgetLockOverlay');
+    const tabsContainer = document.getElementById('fidgetTabsContainer');
+    const lockCountdown = document.getElementById('fidgetLockCountdown');
+    const lockBadge = document.getElementById('fidgetLockBadge');
+    const lockText = document.getElementById('fidgetLockText');
+    const lockSettingSelect = document.getElementById('fidgetLockSettingSelect');
+    const emergencyUnlockBtn = document.getElementById('emergencyUnlockBtn');
+    const fidgetGoStudyBtn = document.getElementById('fidgetGoStudyBtn');
+
+    if (!toggleBtn || !pod) return;
+
+    // Load saved lock preference (default 50 mins locked per hour)
+    let lockMinutesPerHour = parseInt(localStorage.getItem('studyflow_fidget_lock') || '50', 10);
+    if (lockSettingSelect) {
+      lockSettingSelect.value = String(lockMinutesPerHour);
+      lockSettingSelect.addEventListener('change', (e) => {
+        lockMinutesPerHour = parseInt(e.target.value, 10);
+        localStorage.setItem('studyflow_fidget_lock', String(lockMinutesPerHour));
+        updateLockState();
+      });
+    }
+
+    let emergencyUnlockTimestamp = 0;
+
+    // Hourly lock calculation
+    function getLockStatus() {
+      // If user disabled lock (0)
+      if (lockMinutesPerHour === 0) {
+        return { locked: false, remainingSeconds: 0 };
+      }
+
+      // Check emergency unlock override
+      const nowMs = Date.now();
+      if (nowMs < emergencyUnlockTimestamp) {
+        const rem = Math.ceil((emergencyUnlockTimestamp - nowMs) / 1000);
+        return { locked: false, remainingSeconds: rem, isEmergency: true };
+      }
+
+      // If active study focus timer is running, always lock!
+      if (timerRunning && timerMode !== 'short-break' && timerMode !== 'long-break') {
+        return { locked: true, remainingSeconds: timerSecondsLeft || 1200, reason: 'Focus Sprint Active' };
+      }
+
+      // If timer is on break mode, unlock!
+      if (timerRunning && (timerMode === 'short-break' || timerMode === 'long-break')) {
+        return { locked: false, remainingSeconds: timerSecondsLeft, isBreak: true };
+      }
+
+      // Calculate minute in the current hour (0-59)
+      const d = new Date();
+      const currentMin = d.getMinutes();
+      const currentSec = d.getSeconds();
+
+      if (currentMin < lockMinutesPerHour) {
+        // In the locked portion of the hour
+        const minsLeft = (lockMinutesPerHour - 1) - currentMin;
+        const secsLeft = 60 - currentSec;
+        return { locked: true, remainingSeconds: minsLeft * 60 + secsLeft, reason: `Hourly Lock (${lockMinutesPerHour}m/hr)` };
+      }
+
+      // In the unlocked break portion (last 60 - lockMinutesPerHour minutes)
+      const minsLeft = 59 - currentMin;
+      const secsLeft = 60 - currentSec;
+      return { locked: false, remainingSeconds: minsLeft * 60 + secsLeft, isBreak: true };
+    }
+
+    function formatTime(totalSecs) {
+      const m = Math.floor(totalSecs / 60);
+      const s = totalSecs % 60;
+      return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+    }
+
+    function updateLockState() {
+      const status = getLockStatus();
+
+      if (status.locked) {
+        if (lockOverlay) lockOverlay.classList.remove('hidden');
+        if (tabsContainer) tabsContainer.classList.add('hidden');
+        Object.values(panels).forEach(p => { if (p) p.classList.remove('active'); });
+
+        if (lockCountdown) {
+          lockCountdown.textContent = formatTime(status.remainingSeconds);
+        }
+        if (lockBadge) lockBadge.classList.add('active-lock');
+        if (lockText) lockText.textContent = `Locked (${formatTime(status.remainingSeconds)})`;
+      } else {
+        if (lockOverlay) lockOverlay.classList.add('hidden');
+        if (tabsContainer) tabsContainer.classList.remove('hidden');
+
+        // Restore active panel
+        const currentActiveTab = document.querySelector('.fidget-tab.active');
+        const targetMode = currentActiveTab ? currentActiveTab.getAttribute('data-fidget') : 'spinner';
+        if (panels[targetMode]) {
+          panels[targetMode].classList.add('active');
+        }
+
+        if (lockBadge) lockBadge.classList.remove('active-lock');
+        if (lockText) {
+          if (status.isEmergency) {
+            lockText.textContent = `🔓 Override (${formatTime(status.remainingSeconds)})`;
+          } else if (status.isBreak) {
+            lockText.textContent = `🔓 Break (${formatTime(status.remainingSeconds)})`;
           } else {
-            alert('Invalid JSON structure for study planner.');
+            lockText.textContent = `🔓 Unlocked`;
           }
-        } catch (err) {
-          alert('Could not parse imported JSON file.');
+        }
+      }
+    }
+
+    // Ticking lock timer every second
+    setInterval(() => {
+      updateLockState();
+    }, 1000);
+
+    if (emergencyUnlockBtn) {
+      emergencyUnlockBtn.addEventListener('click', () => {
+        emergencyUnlockTimestamp = Date.now() + 2 * 60 * 1000; // 2 min temporary unlock
+        updateLockState();
+        playFidgetSound('whoosh');
+      });
+    }
+
+    if (fidgetGoStudyBtn) {
+      fidgetGoStudyBtn.addEventListener('click', () => {
+        pod.classList.add('hidden');
+        switchTab('tab-timer');
+      });
+    }
+
+    // Toggle Open/Close
+    toggleBtn.addEventListener('click', () => {
+      const isHidden = pod.classList.contains('hidden');
+      if (isHidden) {
+        pod.classList.remove('hidden');
+        updateLockState();
+        startSpinnerPhysics();
+      } else {
+        pod.classList.add('hidden');
+      }
+    });
+
+    if (closeBtn) {
+      closeBtn.addEventListener('click', () => {
+        pod.classList.add('hidden');
+      });
+    }
+
+    // Fidget Tab Switching
+    const tabs = document.querySelectorAll('.fidget-tab');
+    const panels = {
+      spinner: document.getElementById('fidgetPanelSpinner'),
+      poppers: document.getElementById('fidgetPanelPoppers'),
+      switch: document.getElementById('fidgetPanelSwitch'),
+      breathe: document.getElementById('fidgetPanelBreathe')
+    };
+
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        tabs.forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        const target = tab.getAttribute('data-fidget');
+
+        Object.values(panels).forEach(p => {
+          if (p) p.classList.remove('active');
+        });
+
+        if (panels[target]) {
+          panels[target].classList.add('active');
+        }
+
+        if (target === 'spinner') {
+          startSpinnerPhysics();
+        }
+      });
+    });
+
+    // Web Audio Synthesizer for Fidget Sounds
+    function playFidgetSound(type) {
+      try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return;
+        const ctx = new AudioCtx();
+
+        if (type === 'pop') {
+          // Bubble wrap pop sound
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          const freq = 380 + Math.random() * 240;
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(80, ctx.currentTime + 0.08);
+
+          gain.gain.setValueAtTime(0.35, ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.08);
+
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start();
+          osc.stop(ctx.currentTime + 0.08);
+        } else if (type === 'click') {
+          // Mechanical switch click sound
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(1200, ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(150, ctx.currentTime + 0.04);
+
+          gain.gain.setValueAtTime(0.4, ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.04);
+
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start();
+          osc.stop(ctx.currentTime + 0.04);
+        } else if (type === 'whoosh') {
+          // Reset whoosh sound
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(200, ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(600, ctx.currentTime + 0.15);
+
+          gain.gain.setValueAtTime(0.15, ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
+
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start();
+          osc.stop(ctx.currentTime + 0.15);
+        }
+      } catch (e) {
+        // Sound unavailable in browser policy
+      }
+    }
+
+    // ---------------- 1. Fidget Spinner Engine ----------------
+    const rotor = document.getElementById('fidgetRotor');
+    const hitArea = document.getElementById('spinnerHitArea');
+    const flickBtn = document.getElementById('spinFlickBtn');
+    const rpmLabel = document.getElementById('spinnerRpm');
+
+    let currentAngle = 0;
+    let angularVelocity = 0;
+    let isDragging = false;
+    let lastPointerAngle = 0;
+    let spinnerAnimationId = null;
+
+    function getPointerAngle(e, rect) {
+      const cx = rect.left + rect.width / 2;
+      const cy = rect.top + rect.height / 2;
+      const px = e.clientX || (e.touches && e.touches[0] ? e.touches[0].clientX : 0);
+      const py = e.clientY || (e.touches && e.touches[0] ? e.touches[0].clientY : 0);
+      return Math.atan2(py - cy, px - cx);
+    }
+
+    if (hitArea && rotor) {
+      hitArea.addEventListener('pointerdown', (e) => {
+        isDragging = true;
+        hitArea.setPointerCapture(e.pointerId);
+        const rect = hitArea.getBoundingClientRect();
+        lastPointerAngle = getPointerAngle(e, rect);
+      });
+
+      hitArea.addEventListener('pointermove', (e) => {
+        if (!isDragging) return;
+        const rect = hitArea.getBoundingClientRect();
+        const newAngle = getPointerAngle(e, rect);
+        let delta = newAngle - lastPointerAngle;
+
+        // Wrap around -PI to PI
+        if (delta > Math.PI) delta -= Math.PI * 2;
+        if (delta < -Math.PI) delta += Math.PI * 2;
+
+        currentAngle += delta;
+        angularVelocity = delta * 1.5;
+        lastPointerAngle = newAngle;
+        rotor.style.transform = `rotate(${currentAngle}rad)`;
+      });
+
+      const endDrag = () => {
+        if (isDragging) {
+          isDragging = false;
+          // Cap maximum velocity
+          angularVelocity = Math.max(-1.5, Math.min(1.5, angularVelocity));
         }
       };
-      reader.readAsText(file);
-    });
+
+      hitArea.addEventListener('pointerup', endDrag);
+      hitArea.addEventListener('pointercancel', endDrag);
+    }
+
+    if (flickBtn) {
+      flickBtn.addEventListener('click', () => {
+        angularVelocity += (Math.random() > 0.5 ? 1 : -1) * (0.8 + Math.random() * 0.7);
+        playFidgetSound('whoosh');
+      });
+    }
+
+    function startSpinnerPhysics() {
+      if (spinnerAnimationId) return;
+
+      function step() {
+        if (!isDragging) {
+          currentAngle += angularVelocity;
+          angularVelocity *= 0.985; // smooth friction deceleration
+
+          if (Math.abs(angularVelocity) < 0.001) {
+            angularVelocity = 0;
+          }
+
+          if (rotor) {
+            rotor.style.transform = `rotate(${currentAngle}rad)`;
+          }
+        }
+
+        // Calculate RPM: (rad/sec) * (60 / 2pi)
+        if (rpmLabel) {
+          const rpm = Math.round(Math.abs(angularVelocity) * 60 * 60 / (2 * Math.PI));
+          rpmLabel.textContent = `${rpm} RPM`;
+        }
+
+        spinnerAnimationId = requestAnimationFrame(step);
+      }
+
+      step();
+    }
+
+    // ---------------- 2. Bubble Wrap Poppers ----------------
+    const poppersGrid = document.getElementById('poppersGrid');
+    const poppedCountLabel = document.getElementById('poppedCount');
+    const resetPoppersBtn = document.getElementById('resetPoppersBtn');
+    let totalPopped = 0;
+
+    function buildPoppers() {
+      if (!poppersGrid) return;
+      poppersGrid.innerHTML = '';
+      totalPopped = 0;
+      if (poppedCountLabel) poppedCountLabel.textContent = 'Popped: 0 / 16';
+
+      for (let i = 0; i < 16; i++) {
+        const bubble = document.createElement('div');
+        bubble.className = 'bubble-pop';
+        bubble.setAttribute('role', 'button');
+        bubble.setAttribute('aria-label', `Bubble ${i + 1}`);
+
+        bubble.addEventListener('click', () => {
+          if (!bubble.classList.contains('popped')) {
+            bubble.classList.add('popped');
+            totalPopped++;
+            playFidgetSound('pop');
+            if (poppedCountLabel) {
+              poppedCountLabel.textContent = `Popped: ${totalPopped} / 16`;
+            }
+          }
+        });
+
+        poppersGrid.appendChild(bubble);
+      }
+    }
+
+    buildPoppers();
+
+    if (resetPoppersBtn) {
+      resetPoppersBtn.addEventListener('click', () => {
+        buildPoppers();
+        playFidgetSound('whoosh');
+      });
+    }
+
+    // ---------------- 3. Mechanical Clicker Switch ----------------
+    const clickerBtn = document.getElementById('fidgetClickerBtn');
+    const clickerCountLabel = document.getElementById('fidgetClickCount');
+    let clickCount = 0;
+
+    if (clickerBtn) {
+      clickerBtn.addEventListener('pointerdown', () => {
+        clickerBtn.classList.add('pressed');
+        clickCount++;
+        playFidgetSound('click');
+        if (clickerCountLabel) {
+          clickerCountLabel.textContent = clickCount;
+        }
+      });
+
+      clickerBtn.addEventListener('pointerup', () => {
+        clickerBtn.classList.remove('pressed');
+      });
+
+      clickerBtn.addEventListener('pointerleave', () => {
+        clickerBtn.classList.remove('pressed');
+      });
+    }
+
+    // ---------------- 4. 4-7-8 Breathing Guide ----------------
+    const breatheText = document.getElementById('breatheText');
+    if (breatheText) {
+      const phases = ['Inhale...', 'Hold...', 'Exhale...', 'Rest & Repeat'];
+      let phaseIdx = 0;
+
+      setInterval(() => {
+        phaseIdx = (phaseIdx + 1) % phases.length;
+        breatheText.textContent = phases[phaseIdx];
+      }, 4000);
+    }
   }
 
   // ================= App Initialization =================

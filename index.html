@@ -10,8 +10,27 @@
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
 </head>
 <body data-theme="light">
+  <!-- Background Ambient Aurora Glow & Opening FX Canvas -->
+  <div class="ambient-aurora"></div>
+  <canvas id="fxCanvas" class="fx-canvas"></canvas>
+
   <!-- Main Container -->
   <div class="app-layout">
+    <!-- Top Welcome Splash Banner -->
+    <div id="welcomeBanner" class="welcome-banner">
+      <div class="welcome-content">
+        <div class="welcome-badge">🚀 READY TO STUDY</div>
+        <div class="welcome-text">
+          <h3>Welcome to StudyFlow!</h3>
+          <p id="welcomeQuote">"Success is the sum of small efforts, repeated day in and day out." Let's master <strong>FRONTEND</strong>, <strong>DSA</strong>, <strong>ICP</strong>, and <strong>MATHS</strong> today!</p>
+        </div>
+      </div>
+      <div class="welcome-actions">
+        <button id="quickStartSessionBtn" class="btn btn-sm btn-primary">⚡ Quick 25m Focus</button>
+        <button id="closeWelcomeBtn" class="welcome-close" title="Dismiss">&times;</button>
+      </div>
+    </div>
+
     <!-- Top Header Navigation -->
     <header class="app-header">
       <div class="header-brand">
@@ -74,49 +93,55 @@
       <section id="tab-dashboard" class="tab-panel active">
         <!-- Top Stats Row -->
         <div class="stats-grid">
-          <div class="stat-card">
+          <!-- Card 1: Today's Study -->
+          <div class="stat-card" id="cardTodayStudy">
             <div class="stat-card-header">
-              <span class="stat-label">TODAY'S STUDY</span>
-              <span class="stat-badge" id="dashTodayPct">0%</span>
+              <span class="stat-label stat-label-light">TODAY'S STUDY</span>
+              <span class="stat-badge badge-glass-pill" id="dashTodayPct">0%</span>
             </div>
-            <div class="stat-value" id="dashTodayHours">0.0<span class="stat-unit">h</span></div>
-            <div class="stat-progress">
-              <div class="progress-bar" id="dashTodayBar" style="width: 0%"></div>
+            <div class="stat-value stat-value-light" id="dashTodayHours">0.0<span class="stat-unit stat-unit-light">h</span></div>
+            <div class="stat-progress stat-progress-glass">
+              <div class="progress-bar bar-glass-white" id="dashTodayBar" style="width: 0%"></div>
             </div>
-            <div class="stat-subtext" id="dashTodayTarget">Target: 3.0 hours</div>
+            <div class="stat-subtext stat-subtext-light" id="dashTodayTarget">Target: 3.0 hours</div>
           </div>
 
-          <div class="stat-card">
+          <!-- Card 2: Weekly Target -->
+          <div class="stat-card" id="cardWeekTarget">
             <div class="stat-card-header">
-              <span class="stat-label">WEEKLY TARGET</span>
-              <span class="stat-badge" id="dashWeekPct">0%</span>
+              <span class="stat-label stat-label-light">WEEKLY TARGET</span>
+              <span class="stat-badge badge-glass-pill" id="dashWeekPct">0%</span>
             </div>
-            <div class="stat-value" id="dashWeekHours">0.0<span class="stat-unit">h</span></div>
-            <div class="stat-progress">
-              <div class="progress-bar bar-purple" id="dashWeekBar" style="width: 0%"></div>
+            <div class="stat-value stat-value-light" id="dashWeekHours">0.0<span class="stat-unit stat-unit-light">h</span></div>
+            <div class="stat-progress stat-progress-glass">
+              <div class="progress-bar bar-glass-white" id="dashWeekBar" style="width: 0%"></div>
             </div>
-            <div class="stat-subtext" id="dashWeekTarget">Target: 22.0 hours</div>
+            <div class="stat-subtext stat-subtext-light" id="dashWeekTarget">Target: 22.0 hours</div>
           </div>
 
-          <div class="stat-card">
+          <!-- Card 3: Efficiency Tracker -->
+          <div class="stat-card" id="cardEfficiency">
             <div class="stat-card-header">
-              <span class="stat-label">EFFICIENCY INDEX</span>
-              <span class="stat-badge badge-green" id="dashEffRating">High</span>
+              <span class="stat-label stat-label-light">EFFICIENCY TRACKER</span>
+              <span class="stat-badge badge-glass-pill" id="dashEffRating">HIGH</span>
             </div>
-            <div class="stat-value" id="dashEffScore">100<span class="stat-unit">/100</span></div>
-            <div class="stat-progress">
-              <div class="progress-bar bar-green" id="dashEffBar" style="width: 100%"></div>
+            <div class="stat-value stat-value-light" id="dashEffScore">100<span class="stat-unit stat-unit-light">/100</span></div>
+            <div class="stat-progress stat-progress-glass">
+              <div class="progress-bar bar-glass-white" id="dashEffBar" style="width: 100%"></div>
             </div>
-            <div class="stat-subtext" id="dashFocusAvg">Avg Focus: 5.0 ⭐</div>
+            <div class="stat-subtext stat-subtext-light" id="dashFocusAvg">Avg Focus: 5.0 ⭐ (Peak Focus)</div>
           </div>
 
-          <div class="stat-card">
+          <div class="stat-card stat-card-active">
             <div class="stat-card-header">
-              <span class="stat-label">STUDY STREAK</span>
-              <span class="stat-badge badge-orange">Active</span>
+              <span class="stat-label stat-label-light">STUDY STREAK</span>
+              <span class="stat-badge badge-streak-active" id="dashStreakBadge">ACTIVE</span>
             </div>
-            <div class="stat-value" id="dashStreakVal">🔥 0<span class="stat-unit">days</span></div>
-            <div class="stat-subtext-plain" id="dashBestStreak">Best Record: 0 days</div>
+            <div class="stat-value stat-value-light" id="dashStreakVal">🔥 0<span class="stat-unit stat-unit-light">days</span></div>
+            <div class="stat-progress stat-progress-glass">
+              <div class="progress-bar bar-streak-active" style="width: 100%"></div>
+            </div>
+            <div class="stat-subtext stat-subtext-light" id="dashBestStreak">Best Record: 0 days</div>
           </div>
         </div>
 
@@ -538,6 +563,111 @@
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-outline" id="closeSubjectModalFooterBtn">Done</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= INTERACTIVE FIDGET ZEN POD ================= -->
+  <div class="fidget-wrapper" id="fidgetWrapper">
+    <!-- Floating Collapsible Pill Button -->
+    <button class="fidget-toggle-btn" id="fidgetToggleBtn" title="Study break & focus fidget pod">
+      <span class="fidget-icon">🌀</span>
+      <span class="fidget-btn-text">Zen Fidget</span>
+      <span class="fidget-pulse-ring"></span>
+    </button>
+
+    <!-- Interactive Fidget Box -->
+    <div class="fidget-pod hidden" id="fidgetPod">
+      <div class="fidget-header">
+        <div class="fidget-title">
+          <span class="fidget-title-icon">✨</span>
+          <h4>Focus Fidget & Zen</h4>
+        </div>
+        <div style="display: flex; align-items: center; gap: 0.4rem;">
+          <div class="fidget-lock-badge" id="fidgetLockBadge" title="Zen Fidget Hourly Lock: Locks during study focus time">
+            <span id="fidgetLockIcon">🔒</span> <span id="fidgetLockText">Lock: 50m/hr</span>
+          </div>
+          <button class="fidget-close-btn" id="fidgetCloseBtn">&times;</button>
+        </div>
+      </div>
+
+      <!-- Fidget Locked Screen Overlay (Shown when study lock is active) -->
+      <div class="fidget-lock-overlay hidden" id="fidgetLockOverlay">
+        <div class="lock-big-icon">🔒</div>
+        <h4>Study Lock Active!</h4>
+        <p style="font-size: 0.8rem; color: var(--text-muted);">Zen Fidget is locked to keep your focus sharp and eliminate distractions.</p>
+        <div class="lock-countdown" id="fidgetLockCountdown">45:00</div>
+        <p style="font-size: 0.75rem; color: var(--text-muted);" id="fidgetLockDesc">Fidget locked for 50 mins every hour</p>
+        <div style="display: flex; gap: 0.5rem; margin-top: 0.4rem;">
+          <button class="btn btn-sm btn-outline" id="emergencyUnlockBtn">🔓 2m Quick Break</button>
+          <button class="btn btn-sm btn-primary" id="fidgetGoStudyBtn">⏱️ Focus Timer</button>
+        </div>
+      </div>
+
+      <!-- Fidget Tabs (Hidden when locked) -->
+      <div class="fidget-tabs" id="fidgetTabsContainer">
+        <button class="fidget-tab active" data-fidget="spinner">🌀 Spinner</button>
+        <button class="fidget-tab" data-fidget="poppers">🫧 Bubble Pop</button>
+        <button class="fidget-tab" data-fidget="switch">🔘 Clicker</button>
+        <button class="fidget-tab" data-fidget="breathe">🧘 Breathe</button>
+      </div>
+
+      <!-- Fidget Panel 1: 3D Inertial Spinner -->
+      <div class="fidget-panel active" id="fidgetPanelSpinner">
+        <div class="spinner-container" id="spinnerHitArea">
+          <div class="spinner-rotor" id="fidgetRotor">
+            <div class="spinner-center"></div>
+            <div class="spinner-blade blade-1"></div>
+            <div class="spinner-blade blade-2"></div>
+            <div class="spinner-blade blade-3"></div>
+          </div>
+        </div>
+        <div class="spinner-controls">
+          <button class="btn btn-sm btn-primary" id="spinFlickBtn">⚡ Super Flick</button>
+          <span class="spinner-stats" id="spinnerRpm">0 RPM</span>
+        </div>
+        <span class="fidget-hint">Click, drag, or flick the spinner with momentum!</span>
+      </div>
+
+      <!-- Fidget Panel 2: Bubble Wrap Poppers -->
+      <div class="fidget-panel" id="fidgetPanelPoppers">
+        <div class="poppers-grid" id="poppersGrid"></div>
+        <div class="poppers-footer">
+          <span class="poppers-count" id="poppedCount">Popped: 0</span>
+          <button class="btn btn-sm btn-outline" id="resetPoppersBtn">Reset All</button>
+        </div>
+      </div>
+
+      <!-- Fidget Panel 3: Mechanical Tactile Switch -->
+      <div class="fidget-panel" id="fidgetPanelSwitch">
+        <div class="switch-container">
+          <button class="mechanical-switch" id="fidgetClickerBtn">
+            <span class="switch-cap">CLICK</span>
+          </button>
+          <div class="switch-counter">Total Clicks: <span id="fidgetClickCount">0</span></div>
+        </div>
+        <span class="fidget-hint">Ultra-satisfying mechanical keyboard switch with sound</span>
+      </div>
+
+      <!-- Fidget Panel 4: 4-7-8 Breathing Guide -->
+      <div class="fidget-panel" id="fidgetPanelBreathe">
+        <div class="breathe-wrapper">
+          <div class="breathe-orb" id="breatheOrb">
+            <span class="breathe-text" id="breatheText">Inhale</span>
+          </div>
+        </div>
+        <span class="fidget-hint">Box Breathing: Inhale (4s) • Hold (4s) • Exhale (4s)</span>
+      </div>
+
+      <!-- Hourly Lock Preference Config -->
+      <div class="lock-setting-row" id="lockSettingRow">
+        <span>🔒 Hourly Lock:</span>
+        <select id="fidgetLockSettingSelect" class="form-select" style="width: auto; padding: 0.15rem 0.5rem; font-size: 0.75rem;">
+          <option value="50" selected>Lock 50m / hr</option>
+          <option value="45">Lock 45m / hr</option>
+          <option value="55">Lock 55m / hr</option>
+          <option value="0">Off (Always Open)</option>
+        </select>
       </div>
     </div>
   </div>
