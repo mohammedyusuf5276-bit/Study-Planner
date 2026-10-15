@@ -26,7 +26,7 @@
         </div>
       </div>
       <div class="welcome-actions">
-        <button id="quickStartSessionBtn" class="btn btn-sm btn-primary">⚡ Quick 25m Focus</button>
+        <button id="quickStartSessionBtn" class="btn btn-sm btn-primary">⚡ Quick 60m Focus</button>
         <button id="closeWelcomeBtn" class="welcome-close" title="Dismiss">&times;</button>
       </div>
     </div>
@@ -61,6 +61,7 @@
       </div>
 
       <div class="header-actions">
+        <button id="openSettingsBtn" class="btn btn-icon settings-trigger" title="Study settings and focus help" aria-label="Open study settings">⚙</button>
         <button id="themeToggleBtn" class="btn btn-icon" title="Toggle Dark/Light Mode">
           <span id="themeIcon">🌙</span>
         </button>
@@ -69,6 +70,11 @@
         </button>
       </div>
     </header>
+
+    <div id="focusReturnWarning" class="focus-return-warning hidden" role="status" aria-live="polite">
+      <span id="focusReturnWarningText"></span>
+      <button type="button" id="dismissFocusReturnWarning" aria-label="Dismiss focus warning">&times;</button>
+    </div>
 
     <!-- Navigation Tabs -->
     <nav class="nav-tabs" role="tablist">
@@ -133,9 +139,15 @@
               <div class="progress-bar bar-glass-white" id="dashEffBar" style="width: 100%"></div>
             </div>
             <div class="stat-subtext stat-subtext-light" id="dashFocusAvg">Avg Focus: 5.0 ⭐ (Peak Focus)</div>
+            <button class="efficiency-chart-toggle" id="toggleEfficiencyChartBtn" type="button" aria-expanded="false" aria-controls="efficiencyChartDetails">Show subject charts</button>
+            <div class="efficiency-chart-details hidden" id="efficiencyChartDetails">
+              <div class="efficiency-chart-heading">Daily Subject Efficiency</div>
+              <p class="efficiency-chart-note">Daily goal progress + focus rating</p>
+              <div id="dailySubjectEfficiency" class="daily-subject-efficiency"></div>
+            </div>
           </div>
 
-          <div class="stat-card stat-card-active">
+          <div class="stat-card stat-card-active streak-card-interactive" id="streakAttendanceCard" role="button" tabindex="0" aria-label="Open daily attendance calendar">
             <div class="stat-card-header">
               <span class="stat-label stat-label-light">STUDY STREAK</span>
               <span class="stat-badge badge-streak-active" id="dashStreakBadge">ACTIVE</span>
@@ -144,7 +156,7 @@
             <div class="stat-progress stat-progress-glass">
               <div class="progress-bar bar-streak-active" style="width: 100%"></div>
             </div>
-            <div class="stat-subtext stat-subtext-light" id="dashBestStreak">Best Record: 0 days</div>
+            <div class="stat-subtext stat-subtext-light" id="dashBestStreak">Best Record: 0 days · View attendance</div>
           </div>
         </div>
 
@@ -163,6 +175,16 @@
             <div class="recommendations-list" id="recommendationsList">
               <!-- Dynamically populated -->
             </div>
+            <div class="coach-rules">
+              <h4>Time Management Rules</h4>
+              <ul class="principles-list">
+                <li><strong>Plan your day:</strong> Check upcoming deadlines and choose the most important tasks first.</li>
+                <li><strong>Break work into steps:</strong> Turn large assignments into smaller actions with their own due dates.</li>
+                <li><strong>Schedule realistic blocks:</strong> Set aside study time and leave a little room between commitments.</li>
+                <li><strong>Set one clear goal:</strong> Decide what you will finish in each study block, then focus on that task.</li>
+                <li><strong>Protect focus and recharge:</strong> Take a short break between blocks. Switching tabs pauses the timer; more than 3 switches resets the session.</li>
+              </ul>
+            </div>
           </div>
 
           <!-- Right: Upcoming Priority Tasks -->
@@ -172,7 +194,10 @@
                 <span class="title-icon">⚡</span>
                 <h3>Upcoming Academic Deadlines</h3>
               </div>
-              <button class="btn btn-sm btn-outline" id="jumpToPlannerBtn">View All</button>
+              <div class="header-tools">
+                <button class="btn btn-sm btn-primary" id="addAssignmentBtn">+ Add Assignment</button>
+                <button class="btn btn-sm btn-outline" id="jumpToPlannerBtn">View All</button>
+              </div>
             </div>
             <div class="quick-tasks-list" id="quickUpcomingTasks">
               <!-- Dynamically populated -->
@@ -196,6 +221,19 @@
             <button class="btn btn-primary" type="submit">Add Material</button>
           </form>
           <div id="materialsList" class="materials-list"></div>
+          <div class="study-notes-section">
+            <div class="card-header"><div class="card-title"><span class="title-icon">📝</span><h3>Saved Study Notes</h3></div></div>
+            <p class="card-description">Choose a subject to see its saved notes, or select All Subjects.</p>
+            <div class="form-group notes-filter"><label for="notesSubjectFilter">Show notes for</label><select class="form-select" id="notesSubjectFilter"><option value="ALL">All Subjects</option></select></div>
+            <form id="studyNoteForm" class="study-note-form">
+              <input type="hidden" id="studyNoteId">
+              <div class="form-group"><label for="studyNoteTitle">Title</label><input class="form-input" id="studyNoteTitle" maxlength="120" placeholder="e.g. Chapter 3 revision" required></div>
+              <div class="form-group"><label for="studyNoteSubject">Subject</label><select class="form-select" id="studyNoteSubject"><option value="">General</option></select></div>
+              <div class="form-group note-body-group"><label for="studyNoteBody">Notes</label><textarea class="form-input form-textarea" id="studyNoteBody" rows="6" maxlength="10000" placeholder="Write your notes here..." required></textarea></div>
+              <div class="note-form-actions"><button class="btn btn-primary" id="saveStudyNoteBtn" type="submit">Save Note</button><button class="btn btn-outline hidden" id="cancelStudyNoteEditBtn" type="button">Cancel Edit</button></div>
+            </form>
+            <div id="studyNotesList" class="study-notes-list"></div>
+          </div>
         </div>
       </section>
 
@@ -322,8 +360,9 @@
           <!-- Main Timer Display Box -->
           <div class="timer-main-card">
             <div class="timer-modes">
-              <button class="timer-mode-btn active" data-mode="pomodoro" data-duration="25">25m Pomodoro</button>
-              <button class="timer-mode-btn" data-mode="deep" data-duration="50">50m Deep Work</button>
+              <button class="timer-mode-btn active" data-mode="focus-60" data-duration="60">60m Focus</button>
+              <button class="timer-mode-btn" data-mode="focus-90" data-duration="90">90m Focus</button>
+              <button class="timer-mode-btn" data-mode="focus-120" data-duration="120">120m Focus</button>
               <button class="timer-mode-btn" data-mode="short-break" data-duration="5">5m Short Break</button>
               <button class="timer-mode-btn" data-mode="long-break" data-duration="15">15m Long Break</button>
               <button class="timer-mode-btn" data-mode="stopwatch" data-duration="0">Open Stopwatch</button>
@@ -381,22 +420,6 @@
 
           <!-- Timer Sidebar: Guidelines & Quick Manual Log -->
           <div class="timer-sidebar">
-            <!-- Pomodoro Principles Card -->
-            <div class="content-card">
-              <div class="card-header">
-                <div class="card-title">
-                  <span class="title-icon">🧠</span>
-                  <h3>Time Management Rules</h3>
-                </div>
-              </div>
-              <ul class="principles-list">
-                <li><strong>25-min sprints:</strong> Boosts cognitive retention and prevents mental burnout.</li>
-                <li><strong>Strict breaks:</strong> Take 5 mins away from screens after every work block.</li>
-                <li><strong>Task attribution:</strong> Logging time against tasks trains accurate time forecasting.</li>
-                <li><strong>Hydration & posture:</strong> Stand up, stretch, and drink water during pauses.</li>
-              </ul>
-            </div>
-
             <!-- Quick Offline Log Form -->
             <div class="content-card">
               <div class="card-header">
@@ -411,21 +434,19 @@
                   <select id="manualSubSelect" class="form-select" required></select>
                 </div>
                 <div class="form-row">
-                  <div class="form-group">
-                    <label for="manualMinutesInput">Minutes:</label>
-                    <input type="number" id="manualMinutesInput" class="form-input" min="5" max="720" value="60" required>
-                  </div>
-                  <div class="form-group">
-                    <label for="manualDateInput">Date:</label>
-                    <input type="date" id="manualDateInput" class="form-input" required>
-                  </div>
+                  <div class="form-group"><label for="manualStartTimeInput">Log in</label><input type="datetime-local" id="manualStartTimeInput" class="form-input" required></div>
+                  <div class="form-group"><label for="manualEndTimeInput">Log out</label><input type="datetime-local" id="manualEndTimeInput" class="form-input" required></div>
                 </div>
                 <div class="form-group">
                   <label for="manualNotesInput">Notes / Topics covered:</label>
                   <input type="text" id="manualNotesInput" class="form-input" placeholder="e.g. Chapter 4 exercise sets">
                 </div>
-                <button type="submit" class="btn btn-primary btn-block">Log Hours</button>
+                <button type="submit" class="btn btn-primary btn-block">Save Offline Session</button>
               </form>
+              <div class="offline-log-history">
+                <h4>Offline Log History</h4>
+                <div class="tasks-table-card"><table class="tasks-table"><thead><tr><th>Subject</th><th>Log in</th><th>Log out</th><th>Time studied</th></tr></thead><tbody id="offlineLogsBody"></tbody></table></div>
+              </div>
             </div>
           </div>
         </div>
@@ -586,6 +607,51 @@
         <button type="button" class="btn btn-outline" id="closeSubjectModalFooterBtn">Done</button>
       </div>
     </div>
+  </div>
+
+  <!-- Study Settings & Help -->
+  <div class="modal-overlay hidden" id="settingsModalOverlay">
+    <section class="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+      <div class="modal-header"><h3 id="settingsTitle">⚙ Study Settings &amp; Help</h3><button class="modal-close" id="closeSettingsBtn" aria-label="Close settings">&times;</button></div>
+      <div class="modal-body">
+        <div class="settings-account">
+          <h4>Student Profile</h4>
+          <p class="card-description" id="profileStatus">Not logged in on this device.</p>
+          <form id="profileLoginForm" class="profile-login-form">
+            <div class="form-group"><label for="profileNameInput">Student name</label><input id="profileNameInput" class="form-input" maxlength="60" autocomplete="name" placeholder="Enter your name" required></div>
+            <div class="form-group"><label for="profileMobileInput">Mobile number</label><input id="profileMobileInput" class="form-input" type="tel" inputmode="tel" autocomplete="tel" maxlength="24" placeholder="Enter your mobile number" required></div>
+            <button class="btn btn-primary btn-sm" type="submit">Log in</button>
+          </form>
+          <button type="button" class="btn btn-outline btn-sm hidden" id="profileLogoutBtn">Log out</button>
+          <p class="card-description">Your name and mobile number are stored in this browser only. There is no SMS verification or online account.</p>
+        </div>
+        <div class="form-group focus-setting">
+          <div><label for="pauseOnLeaveToggle">Pause when I leave Study Planner (required)</label><p class="card-description">Always on. The focus timer pauses when you switch tabs or apps, so away time cannot count toward attendance.</p></div>
+          <input type="checkbox" id="pauseOnLeaveToggle" checked disabled>
+        </div>
+        <div class="form-group focus-setting"><div><label for="focusWarningToggle">Show tab return warnings</label><p class="card-description">Remind you when you return after leaving during a focus session.</p></div><input type="checkbox" id="focusWarningToggle"></div>
+        <div class="form-group focus-setting"><div><label for="completionSoundToggle">Play completion sound</label><p class="card-description">Play a short chime when a focus timer finishes.</p></div><input type="checkbox" id="completionSoundToggle"></div>
+        <div class="form-group focus-setting"><div><label for="confirmResetToggle">Confirm before resetting</label><p class="card-description">Ask before clearing active timer progress.</p></div><input type="checkbox" id="confirmResetToggle"></div>
+        <div class="settings-help-card"><strong>Need to block AI sites?</strong><p>This app can pause its own timer, but a webpage cannot block other browser tabs or apps. Use your device’s parental controls, a managed browser, or a site-blocking tool for that.</p></div>
+        <p class="card-description">Focus sessions start at 60 minutes. You can choose longer blocks; short timer modes are for breaks.</p>
+      </div>
+      <div class="modal-footer"><button type="button" class="btn btn-primary" id="doneSettingsBtn">Done</button></div>
+    </section>
+  </div>
+
+  <!-- Daily Attendance -->
+  <div class="modal-overlay hidden" id="attendanceModalOverlay">
+    <section class="modal-dialog attendance-dialog" role="dialog" aria-modal="true" aria-labelledby="attendanceTitle">
+      <div class="modal-header"><h3 id="attendanceTitle">Daily Attendance</h3><button class="modal-close" id="closeAttendanceBtn" aria-label="Close attendance">&times;</button></div>
+      <div class="modal-body">
+        <div class="attendance-calendar-header"><button class="btn btn-sm btn-outline" id="attendancePrevMonth" aria-label="Previous month">‹</button><h4 id="attendanceMonthLabel"></h4><button class="btn btn-sm btn-outline" id="attendanceNextMonth" aria-label="Next month">›</button></div>
+        <div class="attendance-weekdays"><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span></div>
+        <div class="attendance-calendar" id="attendanceCalendar"></div>
+        <p class="card-description" id="attendanceStatus"></p>
+        <div class="attendance-threshold" id="attendanceThreshold">Study 1 hour to mark attendance</div>
+        <p class="card-description attendance-note">Attendance is counted after at least 60 minutes in a saved focus timer session. Manual offline logs do not count.</p>
+      </div>
+    </section>
   </div>
 
   <!-- ================= INTERACTIVE FIDGET ZEN POD ================= -->

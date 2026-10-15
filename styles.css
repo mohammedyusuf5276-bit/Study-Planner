@@ -188,6 +188,56 @@ body {
   gap: 0.5rem;
 }
 
+.settings-trigger {
+  width: 2.35rem;
+  height: 2.35rem;
+  padding: 0;
+  font-size: 1rem;
+}
+.focus-setting { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.focus-setting input { width: 1.1rem; height: 1.1rem; accent-color: var(--primary); flex: 0 0 auto; }
+.settings-help-card { padding: 1rem; margin: 1rem 0; border: 1px solid var(--border-color); border-radius: var(--radius-md); background: var(--bg-secondary); }
+.settings-help-card p { margin-top: 0.4rem; color: var(--text-muted); font-size: 0.875rem; }
+.settings-account { padding: 1rem; margin-bottom: 1rem; border: 1px solid var(--border-color); border-radius: var(--radius-md); background: var(--bg-secondary); }
+.settings-account h4 { margin-bottom: 0.35rem; }
+.settings-account > .card-description:last-child { margin-top: 0.65rem; }
+.profile-login-form { display: grid; grid-template-columns: 1fr 1fr; gap: 0 0.75rem; align-items: end; margin: 0.75rem 0; }
+.profile-login-form .form-group { margin-bottom: 0.65rem; }
+.profile-login-form button { grid-column: 1 / -1; justify-self: start; }
+@media (max-width: 520px) { .profile-login-form { grid-template-columns: 1fr; } .profile-login-form button { grid-column: auto; } }
+.focus-return-warning {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin: 0.75rem 0;
+  padding: 0.75rem 1rem;
+  color: var(--warning);
+  background: var(--warning-subtle);
+  border: 1px solid var(--warning-border);
+  border-radius: var(--radius-md);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+.focus-return-warning button { border: 0; background: transparent; color: inherit; font-size: 1.25rem; cursor: pointer; }
+.offline-log-history { margin-top: 1.25rem; }
+.offline-log-history h4 { margin-bottom: 0.65rem; }
+.offline-log-history .tasks-table-card { overflow-x: auto; }
+.offline-log-history .tasks-table { min-width: 520px; }
+.table-empty { text-align: center; color: var(--text-muted); padding: 1rem !important; }
+.streak-card-interactive { cursor: pointer; }
+.streak-card-interactive:focus-visible { outline: 3px solid var(--primary); outline-offset: 3px; }
+.attendance-dialog { max-width: 440px; }
+.attendance-calendar-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
+.attendance-weekdays, .attendance-calendar { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 0.35rem; text-align: center; }
+.attendance-weekdays { margin-bottom: 0.4rem; color: var(--text-muted); font-size: 0.75rem; font-weight: 700; }
+.attendance-day { min-height: 2.6rem; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.1rem; border-radius: var(--radius-md); background: var(--bg-secondary); color: var(--text-main); font-size: 0.85rem; }
+.attendance-day.empty { background: transparent; }
+.attendance-day.attended { background: var(--success-subtle); color: var(--success); font-weight: 800; }
+.attendance-day.today { outline: 2px solid var(--primary); outline-offset: -2px; }
+.attendance-threshold { padding: 0.65rem 0.75rem; border-radius: var(--radius-md); text-align: center; color: var(--primary); background: var(--primary-subtle); font-size: 0.875rem; font-weight: 700; }
+.attendance-note { margin-top: 0.65rem; text-align: center; }
+
 /* ================= Navigation Tabs ================= */
 .nav-tabs {
   display: flex;
@@ -277,6 +327,16 @@ body {
 }
 .material-form button { margin-bottom: 1rem; }
 .materials-list { display: grid; gap: 0.75rem; }
+.study-note-form { display: grid; grid-template-columns: 2fr 1fr; gap: 0 1rem; align-items: start; margin: 1.25rem 0; }
+.study-notes-section { margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--border-color); }
+.notes-filter { max-width: 360px; }
+.study-note-form .note-body-group, .study-note-form .note-form-actions { grid-column: 1 / -1; }
+.note-form-actions { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
+.study-notes-list { display: grid; gap: 0.75rem; }
+.study-note-item { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; padding: 1rem; border: 1px solid var(--border-color); border-radius: var(--radius-md); background: var(--bg-surface); }
+.study-note-content { min-width: 0; flex: 1; }
+.study-note-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 0.6rem; margin-bottom: 0.5rem; }
+.study-note-content p { white-space: normal; overflow-wrap: anywhere; color: var(--text-main); line-height: 1.55; }
 .material-item {
   display: flex;
   align-items: center;
@@ -293,6 +353,9 @@ body {
 @media (max-width: 640px) {
   .material-form { grid-template-columns: 1fr; }
   .material-item { align-items: flex-start; flex-direction: column; }
+  .study-note-form { grid-template-columns: 1fr; }
+  .study-note-form .note-body-group, .study-note-form .note-form-actions { grid-column: auto; }
+  .study-note-item { flex-direction: column; }
 }
 
 .card-header {
@@ -302,6 +365,7 @@ body {
   margin-bottom: 1rem;
   gap: 0.75rem;
 }
+.header-tools { display: flex; align-items: center; gap: 0.5rem; }
 
 .card-title {
   display: flex;
@@ -320,6 +384,8 @@ body {
   color: var(--text-muted);
   margin-bottom: 1rem;
 }
+.coach-rules { margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border-color); }
+.coach-rules h4 { margin-bottom: 0.5rem; font-size: 0.9rem; }
 
 /* ================= Top Stats Cards (Dashboard) ================= */
 .stats-grid {
@@ -1030,6 +1096,18 @@ body {
   flex-direction: column;
   gap: 1rem;
 }
+.daily-subject-efficiency { display: grid; grid-template-columns: repeat(auto-fit, minmax(38px, 1fr)); align-items: end; gap: 0.35rem; margin-top: 0.5rem; }
+.daily-efficiency-bar-column { min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 0.2rem; }
+.daily-efficiency-value { color: #fff; font-size: 0.65rem; font-weight: 800; }
+.daily-efficiency-bar-stage { width: 72%; height: 4.5rem; display: flex; align-items: flex-end; overflow: hidden; border-bottom: 1px solid rgba(255,255,255,0.55); background: repeating-linear-gradient(to top, transparent 0, transparent 24%, rgba(255,255,255,0.12) 25%); }
+.daily-efficiency-bar { width: 100%; min-height: 2px; border-radius: 4px 4px 0 0; transition: height 0.3s ease; }
+.daily-efficiency-subject { width: 100%; overflow: hidden; color: rgba(255,255,255,0.92); font-size: 0.58rem; font-weight: 700; text-align: center; text-overflow: ellipsis; white-space: nowrap; }
+.stat-card .daily-subject-efficiency { grid-template-columns: repeat(auto-fit, minmax(36px, 1fr)); }
+.efficiency-chart-heading { margin-top: 0.75rem; color: #fff; font-size: 0.9rem; font-weight: 800; }
+.efficiency-chart-note { margin: 0.15rem 0 0; color: rgba(255,255,255,0.82); font-size: 0.68rem; }
+.efficiency-chart-toggle { margin-top: 0.6rem; padding: 0; border: 0; background: transparent; color: rgba(255,255,255,0.96); font: inherit; font-size: 0.75rem; font-weight: 800; text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
+.efficiency-chart-toggle:hover { color: #fff; }
+.efficiency-chart-details { margin-top: 0.2rem; }
 
 .subject-item-row {
   display: flex;

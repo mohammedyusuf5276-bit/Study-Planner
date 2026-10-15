@@ -92,17 +92,20 @@
 
   // Timer Runtime State
   let timerInterval = null;
-  let timerMode = 'pomodoro'; // 'pomodoro', 'deep', 'short-break', 'long-break', 'stopwatch'
-  let timerDurationSeconds = 25 * 60;
-  let timerSecondsLeft = 25 * 60;
+  let timerMode = 'focus-60'; // focus blocks are at least 60 minutes; break modes are separate
+  let timerDurationSeconds = 60 * 60;
+  let timerSecondsLeft = 60 * 60;
   let stopwatchSeconds = 0;
   let timerRunning = false;
   let selectedFocusRating = 5;
   let timerStudiedSeconds = 0;
+  let timerSessionStarted = false;
+  let tabSwitchCount = 0;
 
   // View States
   let activeTab = 'tab-dashboard';
   let isEisenhowerView = false;
+  let attendanceMonth = new Date();
 
   // ================= Utility Functions =================
   function getTodayDate() {
@@ -114,6 +117,46 @@
     const d = new Date();
     d.setDate(d.getDate() + offsetDays);
     return d.toISOString().split('T')[0];
+  }
+
+  function getLocalDateTimeValue(date = new Date()) {
+    const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+    return local.toISOString().slice(0, 16);
+  }
+
+  function getLocalDateValue(date) {
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+  }
+
+  function shiftDate(dateString, days) {
+    const [year, month, day] = dateString.split('-').map(Number);
+    const date = new Date(year, month - 1, day);
+    date.setDate(date.getDate() + days);
+    return getLocalDateValue(date);
+  }
+
+  function getDeadlineDaysRemaining(dateString) {
+    const due = new Date(`${dateString}T00:00:00`);
+    const today = new Date(`${getTodayDate()}T00:00:00`);
+    return Math.round((due - today) / 86400000);
+  }
+
+  const attendanceTimerTypes = new Set(['focus-60', 'focus-90', 'focus-120', 'stopwatch', 'pomodoro', 'deep']);
+
+  function getQualifiedAttendanceMinutes(date) {
+    return (store.sessions || []).reduce((total, session) => {
+      const minutes = Number(session.duration_minutes) || 0;
+      return session.date === date && attendanceTimerTypes.has(session.type) && minutes >= 60 ? total + minutes : total;
+    }, 0);
+  }
+
+  function getAttendanceDates() {
+    const minutesByDate = new Map();
+    (store.sessions || []).forEach(session => {
+      const minutes = Number(session.duration_minutes) || 0;
+      if (attendanceTimerTypes.has(session.type) && session.date && minutes >= 60) minutesByDate.set(session.date, (minutesByDate.get(session.date) || 0) + minutes);
+    });
+    return new Set([...minutesByDate.entries()].filter(([, minutes]) => minutes >= 60).map(([date]) => date));
   }
 
   function generateId(prefix = 'id') {
@@ -171,12 +214,11 @@
       try {
         const parsed = JSON.parse(local);
         // If old subjects were cached, update to new subjects
-        const hasNewSubs = parsed.subjects && parsed.subjects.some(s => s.name === 'FRONTEND');
-        if (!hasNewSubs) {
+        if (!Array.isArray(parsed.subjects)) {
           store = { ...DEFAULT_DATA };
           saveData();
         } else {
-          store = parsed;
+          store = { ...DEFAULT_DATA, ...parsed };
         }
       } catch (e) {
         store = { ...DEFAULT_DATA };
@@ -229,31 +271,24 @@
   }
 
   function calculateStreak() {
-    const datesWithStudy = new Set(
-      (store.sessions || [])
-        .filter(s => (Number(s.duration_minutes) || 0) >= 15)
-        .map(s => s.date)
-    );
-
-    if (datesWithStudy.size === 0) return { current: 0, longest: 0 };
-
+    const attended = getAttendanceDates();
+    const ordered = [...attended].sort();
+    let longest = 0;
+    let run = 0;
+    let previous = null;
+    ordered.forEach(date => {
+      run = previous && shiftDate(previous, 1) === date ? run + 1 : 1;
+      longest = Math.max(longest, run);
+      previous = date;
+    });
+    const today = getTodayDate();
+    let cursor = attended.has(today) ? today : (attended.has(shiftDate(today, -1)) ? shiftDate(today, -1) : null);
     let current = 0;
-    let d = new Date();
-    const todayStr = getTodayDate();
-    d.setDate(d.getDate() - 1);
-    const yesterdayStr = d.toISOString().split('T')[0];
-
-    // Check if streak is active today or yesterday
-    let checkDate = datesWithStudy.has(todayStr) ? new Date() : (datesWithStudy.has(yesterdayStr) ? d : null);
-
-    if (checkDate) {
-      while (datesWithStudy.has(checkDate.toISOString().split('T')[0])) {
-        current++;
-        checkDate.setDate(checkDate.getDate() - 1);
-      }
+    while (cursor && attended.has(cursor)) {
+      current++;
+      cursor = shiftDate(cursor, -1);
     }
-
-    return { current, longest: Math.max(current, 3) };
+    return { current, longest };
   }
 
   function calculateEfficiency() {
@@ -286,13 +321,14 @@
     const todayGoal = (store.daily_goals && store.daily_goals[getTodayDate()]) ? store.daily_goals[getTodayDate()].target_hours : 3.0;
     const overdueTasks = (store.tasks || []).filter(t => t.status !== 'Completed' && t.due_date < getTodayDate());
     const upcomingTasks = (store.tasks || []).filter(t => t.status !== 'Completed' && t.due_date >= getTodayDate()).sort((a,b) => a.due_date.localeCompare(b.due_date));
+    const closeDeadline = upcomingTasks.find(task => getDeadlineDaysRemaining(task.due_date) <= 3);
 
     // 1. Goal Pacing
     if (todayHours < todayGoal) {
       const rem = Math.round((todayGoal - todayHours) * 10) / 10;
       tips.push({
         icon: '⏱️',
-        text: `You have <strong>${rem} hours</strong> remaining to achieve your daily target (${todayGoal}h). Try a 25m Pomodoro sprint now!`
+        text: `You have <strong>${rem} hours</strong> remaining to achieve your daily target (${todayGoal}h). Try a 60m focus session now!`
       });
     } else {
       tips.push({
@@ -306,6 +342,12 @@
       tips.push({
         icon: '⚠️',
         text: `Overdue alert: "<strong>${escapeHtml(overdueTasks[0].title)}</strong>" in ${escapeHtml(overdueTasks[0].subject)} is past due. Prioritize this today!`
+      });
+    } else if (closeDeadline) {
+      const daysLeft = getDeadlineDaysRemaining(closeDeadline.due_date);
+      tips.push({
+        icon: '⚠️',
+        text: `Deadline warning: "<strong>${escapeHtml(closeDeadline.title)}</strong>" in ${escapeHtml(closeDeadline.subject)} is ${daysLeft === 0 ? 'due today' : `due in ${daysLeft} day${daysLeft === 1 ? '' : 's'}`}. Plan time for it now.`
       });
     } else if (upcomingTasks.length > 0) {
       tips.push({
@@ -410,7 +452,7 @@
     document.getElementById('dashBestStreak').textContent = `Best Record: ${streak.longest} days`;
     const streakBadge = document.getElementById('dashStreakBadge');
     if (streakBadge) {
-      streakBadge.textContent = 'ACTIVE';
+      streakBadge.textContent = getAttendanceDates().has(getTodayDate()) ? 'ATTENDED' : 'CHECK IN';
     }
 
     // Recommendations list
@@ -435,6 +477,9 @@
     } else {
       quickContainer.innerHTML = upcoming.map(t => {
         const isOverdue = t.due_date < getTodayDate();
+        const daysLeft = getDeadlineDaysRemaining(t.due_date);
+        const isClose = !isOverdue && daysLeft <= 3;
+        const deadlineLabel = isOverdue ? 'OVERDUE' : daysLeft === 0 ? 'DUE TODAY' : isClose ? `DUE IN ${daysLeft}D` : t.due_date;
         return `
           <div class="quick-task-row">
             <div>
@@ -442,7 +487,7 @@
               <span style="font-size: 0.75rem; color: var(--text-muted);">${escapeHtml(t.subject)}</span>
             </div>
             <div style="display: flex; align-items: center; gap: 0.4rem;">
-              <span class="badge ${isOverdue ? 'badge-red' : 'badge-count'}">${t.due_date}</span>
+              <span class="badge ${isOverdue || isClose ? 'badge-red' : 'badge-count'}" title="Deadline: ${t.due_date}">${deadlineLabel}</span>
               <button class="btn btn-sm btn-outline quick-start-btn" data-sub="${escapeHtml(t.subject)}" data-task="${t.id}" title="Study now">⏱️</button>
             </div>
           </div>
@@ -496,6 +541,8 @@
       tbody.innerHTML = filtered.map(t => {
         const isDone = t.status === 'Completed';
         const isOverdue = !isDone && t.due_date < getTodayDate();
+        const daysLeft = getDeadlineDaysRemaining(t.due_date);
+        const isClose = !isDone && !isOverdue && daysLeft <= 3;
         const prioBadge = t.priority === 'High' ? 'badge-red' : (t.priority === 'Medium' ? 'badge-orange' : 'badge-primary');
         const statusClass = isDone ? 'status-completed' : (t.status === 'In Progress' ? 'status-in-progress' : 'status-pending');
 
@@ -512,6 +559,7 @@
             <td>
               ${t.due_date}
               ${isOverdue ? '<span class="overdue-flag">OVERDUE</span>' : ''}
+              ${isClose ? `<span class="overdue-flag">${daysLeft === 0 ? 'DUE TODAY' : `DUE IN ${daysLeft}D`}</span>` : ''}
             </td>
             <td><span class="badge ${prioBadge}">${t.priority}</span></td>
             <td><span class="status-badge ${statusClass}">${t.status}</span></td>
@@ -610,6 +658,8 @@
     subSelect.innerHTML = subOptions;
     manualSubSelect.innerHTML = subOptions;
     document.getElementById('materialSubject').innerHTML = subOptions;
+    document.getElementById('studyNoteSubject').innerHTML = '<option value="">General</option>' + subOptions;
+    document.getElementById('notesSubjectFilter').innerHTML = '<option value="ALL">All Subjects</option><option value="">General</option>' + subOptions;
 
     // Populate task select based on selected subject
     const updateTasksForSubject = () => {
@@ -619,10 +669,13 @@
         relevantTasks.map(t => `<option value="${t.id}">${escapeHtml(t.title)} (${t.estimated_hours}h)</option>`).join('');
     };
 
-    subSelect.addEventListener('change', updateTasksForSubject);
+    subSelect.onchange = updateTasksForSubject;
     updateTasksForSubject();
 
-    document.getElementById('manualDateInput').value = getTodayDate();
+    const endTimeInput = document.getElementById('manualEndTimeInput');
+    const endTime = new Date();
+    endTimeInput.value = getLocalDateTimeValue(endTime);
+    document.getElementById('manualStartTimeInput').value = getLocalDateTimeValue(new Date(endTime.getTime() - 60 * 60000));
   }
 
   function updateTimerDisplay() {
@@ -642,6 +695,7 @@
   function startTimer() {
     if (timerRunning) return;
     timerRunning = true;
+    timerSessionStarted = true;
 
     document.getElementById('timerStartBtn').disabled = true;
     document.getElementById('timerPauseBtn').disabled = false;
@@ -664,7 +718,7 @@
         } else {
           // Timer reached 00:00
           pauseTimer();
-          playCompletionChime();
+          if (localStorage.getItem('studyflow_completion_sound') !== 'false') playCompletionChime();
           document.getElementById('timerStatusLabel').textContent = `🔔 Time's up! Exceptional focus sprint!`;
           alert('🔔 Focus session complete! Take a well-deserved hydration break.');
           finishTimerSession();
@@ -686,6 +740,8 @@
   function resetTimer() {
     pauseTimer();
     timerStudiedSeconds = 0;
+    timerSessionStarted = false;
+    tabSwitchCount = 0;
     document.getElementById('timerStartBtnText').textContent = 'Start Focus';
     document.getElementById('timerCompleteBtn').disabled = true;
 
@@ -705,6 +761,10 @@
     const minutesStudied = Math.round((timerStudiedSeconds / 60) * 100) / 100;
     if (minutesStudied <= 0) {
       document.getElementById('timerStatusLabel').textContent = 'No active study time to save yet.';
+      return;
+    }
+    if (timerMode !== 'short-break' && timerMode !== 'long-break' && timerStudiedSeconds < 60 * 60) {
+      document.getElementById('timerStatusLabel').textContent = 'Study for at least 60 active minutes before saving this focus session.';
       return;
     }
 
@@ -754,6 +814,77 @@
       store.study_materials = materials.filter(item => item.id !== button.dataset.deleteMaterial);
       saveData(); renderMaterials();
     }));
+  }
+
+  function renderStudyNotes() {
+    const list = document.getElementById('studyNotesList');
+    if (!list) return;
+    const notes = store.study_notes || [];
+    const selectedSubject = document.getElementById('notesSubjectFilter').value;
+    const visibleNotes = selectedSubject === 'ALL' ? notes : notes.filter(note => (note.subject || '') === selectedSubject);
+    if (!visibleNotes.length) {
+      list.innerHTML = `<div class="empty-state"><div class="empty-icon">📝</div><h4>${notes.length ? 'No notes for this subject yet' : 'No saved notes yet'}</h4><p>Write a note above and select Save Note.</p></div>`;
+      return;
+    }
+    list.innerHTML = visibleNotes.map(note => `<article class="study-note-item"><div class="study-note-content"><div class="study-note-meta"><h4>${escapeHtml(note.title)}</h4><span class="tag tag-accent">${escapeHtml(note.subject || 'General')}</span></div><p>${escapeHtml(note.body).replace(/\n/g, '<br>')}</p></div><div class="material-actions"><button type="button" class="btn btn-sm btn-outline" data-edit-note="${escapeHtml(note.id)}">Edit</button><button type="button" class="btn btn-sm btn-danger-outline" data-delete-note="${escapeHtml(note.id)}">Delete</button></div></article>`).join('');
+    list.querySelectorAll('[data-edit-note]').forEach(button => button.addEventListener('click', () => {
+      const note = notes.find(item => item.id === button.dataset.editNote);
+      if (!note) return;
+      document.getElementById('notesSubjectFilter').value = note.subject || '';
+      renderStudyNotes();
+      document.getElementById('studyNoteId').value = note.id;
+      document.getElementById('studyNoteTitle').value = note.title;
+      document.getElementById('studyNoteSubject').value = note.subject || '';
+      document.getElementById('studyNoteBody').value = note.body;
+      document.getElementById('saveStudyNoteBtn').textContent = 'Save Changes';
+      document.getElementById('cancelStudyNoteEditBtn').classList.remove('hidden');
+      document.getElementById('studyNoteTitle').focus();
+    }));
+    list.querySelectorAll('[data-delete-note]').forEach(button => button.addEventListener('click', () => {
+      store.study_notes = notes.filter(item => item.id !== button.dataset.deleteNote);
+      saveData(); renderStudyNotes();
+    }));
+  }
+
+  function renderAttendance() {
+    const calendar = document.getElementById('attendanceCalendar');
+    if (!calendar) return;
+    const year = attendanceMonth.getFullYear();
+    const month = attendanceMonth.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const leadingBlanks = (firstDay.getDay() + 6) % 7;
+    const attended = getAttendanceDates();
+    const today = getTodayDate();
+    document.getElementById('attendanceMonthLabel').textContent = attendanceMonth.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+    calendar.innerHTML = Array.from({ length: leadingBlanks + daysInMonth }, (_, index) => {
+      if (index < leadingBlanks) return '<span class="attendance-day empty" aria-hidden="true"></span>';
+      const day = index - leadingBlanks + 1;
+      const date = getLocalDateValue(new Date(year, month, day));
+      const classes = ['attendance-day', attended.has(date) ? 'attended' : '', date === today ? 'today' : ''].filter(Boolean).join(' ');
+      return `<span class="${classes}" aria-label="${date}${attended.has(date) ? ', attended' : ''}">${day}${attended.has(date) ? '<span aria-hidden="true">✓</span>' : ''}</span>`;
+    }).join('');
+    const attendedThisMonth = [...attended].filter(date => date.startsWith(`${year}-${String(month + 1).padStart(2, '0')}-`)).length;
+    const todayMinutes = getQualifiedAttendanceMinutes(today);
+    const remainingMinutes = Math.max(0, 60 - todayMinutes);
+    document.getElementById('attendanceStatus').textContent = `${attendedThisMonth} day${attendedThisMonth === 1 ? '' : 's'} attended this month. Today: ${Math.min(60, Math.floor(todayMinutes))}/60 minutes studied${remainingMinutes ? `; ${remainingMinutes} more to count attendance` : '; attendance counted'}.`;
+    const checkedIn = attended.has(today);
+    document.getElementById('attendanceThreshold').textContent = checkedIn ? 'Attendance marked for today' : 'Study 1 hour to mark attendance';
+  }
+
+  function renderOfflineLogs() {
+    const tbody = document.getElementById('offlineLogsBody');
+    if (!tbody) return;
+    const logs = (store.sessions || []).filter(session => session.type === 'manual').slice(0, 10);
+    if (!logs.length) {
+      tbody.innerHTML = '<tr><td colspan="4" class="table-empty">No offline sessions logged yet.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = logs.map(session => {
+      const start = session.started_at ? new Date(session.started_at).toLocaleString() : 'Time not recorded';
+      const end = session.ended_at ? new Date(session.ended_at).toLocaleString() : 'Time not recorded';
+      return `<tr><td>${escapeHtml(session.subject)}</td><td>${escapeHtml(start)}</td><td>${escapeHtml(end)}</td><td>${(Number(session.duration_minutes || 0) / 60).toFixed(2)} hrs</td></tr>`;
+    }).join('');
   }
 
   // ================= Analytics & Charts Renderer =================
@@ -821,6 +952,28 @@
         </div>
       `;
     }).join('');
+
+    const dailyEfficiencyContainer = document.getElementById('dailySubjectEfficiency');
+    const todayDate = getTodayDate();
+    const dailyEfficiencyRows = (store.subjects || []).map(subject => {
+      const sessionsToday = (store.sessions || []).filter(session => session.date === todayDate && session.subject === subject.name);
+      const hoursToday = sessionsToday.reduce((total, session) => total + (Number(session.duration_minutes) || 0) / 60, 0);
+      const averageFocus = sessionsToday.length
+        ? sessionsToday.reduce((total, session) => total + (Number(session.focus_score) || 0), 0) / sessionsToday.length
+        : 0;
+      const dailyTarget = (Number(subject.target_weekly_hours) || 0) / 7;
+      const targetProgress = dailyTarget > 0 ? Math.min(100, (hoursToday / dailyTarget) * 100) : 0;
+      const focusPercent = sessionsToday.length ? (averageFocus / 5) * 100 : 0;
+      const efficiency = sessionsToday.length ? Math.round((targetProgress + focusPercent) / 2) : 0;
+      return `<div class="daily-efficiency-bar-column" title="${escapeHtml(subject.name)}: ${efficiency}% efficiency · ${hoursToday.toFixed(1)}h studied · Focus ${sessionsToday.length ? averageFocus.toFixed(1) : '—'}/5" aria-label="${escapeHtml(subject.name)}, ${efficiency}% efficiency">
+        <span class="daily-efficiency-value">${efficiency}%</span>
+        <div class="daily-efficiency-bar-stage"><div class="daily-efficiency-bar" style="height:${Math.max(efficiency, 2)}%;background:${subject.color || 'var(--primary)'}"></div></div>
+        <span class="daily-efficiency-subject">${escapeHtml(subject.name)}</span>
+      </div>`;
+    });
+    dailyEfficiencyContainer.innerHTML = dailyEfficiencyRows.length
+      ? dailyEfficiencyRows.join('')
+      : '<div class="empty-state"><p>Add subjects to see daily efficiency.</p></div>';
 
     // 3. Recent Sessions Table
     const sessionsBody = document.getElementById('sessionsTableBody');
@@ -975,7 +1128,9 @@
         const id = btn.getAttribute('data-id');
         store.subjects = store.subjects.filter(s => s.id !== id);
         saveData();
+        setupTimerSelects();
         renderSubjectsTable();
+        renderAll();
       });
     });
   }
@@ -997,6 +1152,9 @@
     renderPlanner();
     renderAnalytics();
     renderMaterials();
+    renderStudyNotes();
+    renderOfflineLogs();
+    renderAttendance();
   }
 
   function escapeHtml(str) {
@@ -1011,12 +1169,141 @@
 
   // ================= Event Listeners Initialization =================
   function setupEventListeners() {
+    const attendanceOverlay = document.getElementById('attendanceModalOverlay');
+    const closeAttendance = () => attendanceOverlay.classList.add('hidden');
+    const openAttendance = () => {
+      attendanceMonth = new Date();
+      renderAttendance();
+      attendanceOverlay.classList.remove('hidden');
+    };
+    const streakCard = document.getElementById('streakAttendanceCard');
+    streakCard.addEventListener('click', openAttendance);
+    streakCard.addEventListener('keydown', event => {
+      if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); openAttendance(); }
+    });
+    document.getElementById('closeAttendanceBtn').addEventListener('click', closeAttendance);
+    attendanceOverlay.addEventListener('click', event => { if (event.target === attendanceOverlay) closeAttendance(); });
+    document.getElementById('attendancePrevMonth').addEventListener('click', () => {
+      attendanceMonth = new Date(attendanceMonth.getFullYear(), attendanceMonth.getMonth() - 1, 1);
+      renderAttendance();
+    });
+    document.getElementById('attendanceNextMonth').addEventListener('click', () => {
+      attendanceMonth = new Date(attendanceMonth.getFullYear(), attendanceMonth.getMonth() + 1, 1);
+      renderAttendance();
+    });
+    const settingsOverlay = document.getElementById('settingsModalOverlay');
+    const closeSettings = () => settingsOverlay.classList.add('hidden');
+    document.getElementById('openSettingsBtn').addEventListener('click', () => settingsOverlay.classList.remove('hidden'));
+    document.getElementById('closeSettingsBtn').addEventListener('click', closeSettings);
+    document.getElementById('doneSettingsBtn').addEventListener('click', closeSettings);
+    settingsOverlay.addEventListener('click', event => { if (event.target === settingsOverlay) closeSettings(); });
+
+    const profileStatus = document.getElementById('profileStatus');
+    const profileLoginForm = document.getElementById('profileLoginForm');
+    const profileLogoutBtn = document.getElementById('profileLogoutBtn');
+    const profileNameInput = document.getElementById('profileNameInput');
+    const profileMobileInput = document.getElementById('profileMobileInput');
+    const renderProfileStatus = () => {
+      const profileName = localStorage.getItem('studyflow_profile_name');
+      const profileMobile = localStorage.getItem('studyflow_profile_mobile');
+      const isLoggedIn = Boolean(profileName && profileMobile);
+      const maskedMobile = profileMobile ? `•••• ${profileMobile.replace(/\D/g, '').slice(-4)}` : '';
+      profileStatus.textContent = isLoggedIn ? `Logged in as ${profileName} · ${maskedMobile} on this device.` : 'Not logged in on this device.';
+      profileLoginForm.classList.toggle('hidden', isLoggedIn);
+      profileLogoutBtn.classList.toggle('hidden', !isLoggedIn);
+    };
+    profileMobileInput.addEventListener('input', () => profileMobileInput.setCustomValidity(''));
+    profileLoginForm.addEventListener('submit', event => {
+      event.preventDefault();
+      const profileName = profileNameInput.value.trim();
+      const profileMobile = profileMobileInput.value.trim();
+      const mobileDigits = profileMobile.replace(/\D/g, '');
+      if (mobileDigits.length < 7 || mobileDigits.length > 15) {
+        profileMobileInput.setCustomValidity('Enter a mobile number with 7 to 15 digits.');
+        profileMobileInput.reportValidity();
+        return;
+      }
+      if (!profileName) return;
+      localStorage.setItem('studyflow_profile_name', profileName);
+      localStorage.setItem('studyflow_profile_mobile', profileMobile);
+      profileNameInput.value = '';
+      profileMobileInput.value = '';
+      renderProfileStatus();
+    });
+    profileLogoutBtn.addEventListener('click', () => {
+      localStorage.removeItem('studyflow_profile_name');
+      localStorage.removeItem('studyflow_profile_mobile');
+      renderProfileStatus();
+    });
+    renderProfileStatus();
+
+    const pauseOnLeaveToggle = document.getElementById('pauseOnLeaveToggle');
+    pauseOnLeaveToggle.checked = true;
+    pauseOnLeaveToggle.disabled = true;
+    const readToggle = (id, key) => {
+      const control = document.getElementById(id);
+      control.checked = localStorage.getItem(key) !== 'false';
+      control.addEventListener('change', () => localStorage.setItem(key, String(control.checked)));
+      return control;
+    };
+    const focusWarningToggle = readToggle('focusWarningToggle', 'studyflow_focus_warning');
+    readToggle('completionSoundToggle', 'studyflow_completion_sound');
+    readToggle('confirmResetToggle', 'studyflow_confirm_reset');
+    let focusTabHiddenAt = null;
+    let focusAway = false;
+    let tabSwitchLimitExceeded = false;
+    const returnWarning = document.getElementById('focusReturnWarning');
+    document.getElementById('dismissFocusReturnWarning').addEventListener('click', () => returnWarning.classList.add('hidden'));
+    const markFocusAway = () => {
+      if (focusAway || !timerSessionStarted || timerMode === 'short-break' || timerMode === 'long-break') return;
+      focusAway = true;
+      focusTabHiddenAt = Date.now();
+      tabSwitchCount++;
+      if (timerRunning) pauseTimer();
+      if (tabSwitchCount > 3) {
+        resetTimer();
+        tabSwitchLimitExceeded = true;
+      }
+    };
+    const returnToFocus = () => {
+      if (focusTabHiddenAt !== null) {
+        const awaySeconds = Math.floor((Date.now() - focusTabHiddenAt) / 1000);
+        const message = tabSwitchLimitExceeded
+          ? 'You switched tabs more than 3 times. The focus timer has been reset; start a new session when you are ready.'
+          : awaySeconds >= 60
+          ? 'You were away for over a minute. This session would normally be at risk, but your progress is safe and has not been deleted. Resume when you are ready.'
+          : 'You switched tabs. Stay focused and return to your study. Your session progress is safe.';
+        if (focusWarningToggle.checked) {
+          document.getElementById('focusReturnWarningText').textContent = message;
+          returnWarning.classList.remove('hidden');
+        }
+        focusTabHiddenAt = null;
+        focusAway = false;
+        tabSwitchLimitExceeded = false;
+      }
+    };
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) markFocusAway();
+      else returnToFocus();
+    });
+    window.addEventListener('blur', markFocusAway);
+    window.addEventListener('focus', () => { if (document.visibilityState === 'visible') returnToFocus(); });
+
     // Navigation
     document.querySelectorAll('.nav-tab').forEach(tab => {
       tab.addEventListener('click', () => switchTab(tab.getAttribute('data-tab')));
     });
 
     document.getElementById('jumpToPlannerBtn').addEventListener('click', () => switchTab('tab-planner'));
+    document.getElementById('addAssignmentBtn').addEventListener('click', () => openTaskModal());
+    const efficiencyChartDetails = document.getElementById('efficiencyChartDetails');
+    const efficiencyChartToggle = document.getElementById('toggleEfficiencyChartBtn');
+    efficiencyChartToggle.addEventListener('click', () => {
+      const expanded = efficiencyChartToggle.getAttribute('aria-expanded') === 'true';
+      efficiencyChartToggle.setAttribute('aria-expanded', String(!expanded));
+      efficiencyChartToggle.textContent = expanded ? 'Show subject charts' : 'Hide subject charts';
+      efficiencyChartDetails.classList.toggle('hidden', expanded);
+    });
 
     // Dark/Light Theme Toggle
     const themeBtn = document.getElementById('themeToggleBtn');
@@ -1075,15 +1362,17 @@
         });
         saveData();
         document.getElementById('newSubName').value = '';
+        setupTimerSelects();
         renderSubjectsTable();
+        renderAll();
       }
     });
 
     // Timer Mode Selectors
     document.querySelectorAll('.timer-mode-btn').forEach(btn => {
       btn.addEventListener('click', () => {
-        if (timerRunning) {
-          if (!confirm('A focus sprint is currently running. Switch mode and reset?')) return;
+        if (timerRunning || timerStudiedSeconds > 0) {
+          if (!confirm('Switch timer mode and clear the current unsaved progress?')) return;
         }
         document.querySelectorAll('.timer-mode-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
@@ -1106,7 +1395,10 @@
     // Timer Controls
     document.getElementById('timerStartBtn').addEventListener('click', startTimer);
     document.getElementById('timerPauseBtn').addEventListener('click', pauseTimer);
-    document.getElementById('timerResetBtn').addEventListener('click', resetTimer);
+    document.getElementById('timerResetBtn').addEventListener('click', () => {
+      if (timerStudiedSeconds > 0 && localStorage.getItem('studyflow_confirm_reset') !== 'false' && !confirm('Reset this timer and clear its unsaved progress?')) return;
+      resetTimer();
+    });
     document.getElementById('timerCompleteBtn').addEventListener('click', finishTimerSession);
 
     // Star Rating
@@ -1127,8 +1419,13 @@
     document.getElementById('quickLogForm').addEventListener('submit', (e) => {
       e.preventDefault();
       const sub = document.getElementById('manualSubSelect').value;
-      const mins = parseFloat(document.getElementById('manualMinutesInput').value) || 60;
-      const logDate = document.getElementById('manualDateInput').value || getTodayDate();
+      const startedAt = new Date(document.getElementById('manualStartTimeInput').value);
+      const endedAt = new Date(document.getElementById('manualEndTimeInput').value);
+      const mins = Math.round((endedAt.getTime() - startedAt.getTime()) / 60000);
+      if (!Number.isFinite(mins) || mins <= 0) {
+        alert('Log out time must be later than log in time.');
+        return;
+      }
       const notes = document.getElementById('manualNotesInput').value.trim();
 
       const newSession = {
@@ -1136,7 +1433,9 @@
         subject: sub,
         task_id: null,
         duration_minutes: mins,
-        date: logDate,
+        date: getLocalDateValue(startedAt),
+        started_at: startedAt.toISOString(),
+        ended_at: endedAt.toISOString(),
         focus_score: 4,
         type: 'manual',
         notes: notes || 'Offline study session'
@@ -1149,6 +1448,42 @@
 
       document.getElementById('manualNotesInput').value = '';
       alert(`✓ Recorded ${(mins / 60).toFixed(1)} hours for ${sub}!`);
+    });
+
+    document.getElementById('studyNoteForm').addEventListener('submit', e => {
+      e.preventDefault();
+      const id = document.getElementById('studyNoteId').value;
+      const note = {
+        id: id || generateId('note'),
+        title: document.getElementById('studyNoteTitle').value.trim(),
+        subject: document.getElementById('studyNoteSubject').value,
+        body: document.getElementById('studyNoteBody').value.trim(),
+        updated_at: new Date().toISOString()
+      };
+      store.study_notes = store.study_notes || [];
+      if (id) {
+        const index = store.study_notes.findIndex(item => item.id === id);
+        if (index >= 0) store.study_notes[index] = note;
+      } else {
+        store.study_notes.unshift(note);
+      }
+      document.getElementById('notesSubjectFilter').value = note.subject || '';
+      saveData();
+      e.target.reset();
+      document.getElementById('studyNoteId').value = '';
+      document.getElementById('saveStudyNoteBtn').textContent = 'Save Note';
+      document.getElementById('cancelStudyNoteEditBtn').classList.add('hidden');
+      renderStudyNotes();
+    });
+    document.getElementById('notesSubjectFilter').addEventListener('change', event => {
+      document.getElementById('studyNoteSubject').value = event.target.value === 'ALL' ? '' : event.target.value;
+      renderStudyNotes();
+    });
+    document.getElementById('cancelStudyNoteEditBtn').addEventListener('click', () => {
+      document.getElementById('studyNoteForm').reset();
+      document.getElementById('studyNoteId').value = '';
+      document.getElementById('saveStudyNoteBtn').textContent = 'Save Note';
+      document.getElementById('cancelStudyNoteEditBtn').classList.add('hidden');
     });
 
     document.getElementById('materialForm').addEventListener('submit', e => {
@@ -1205,13 +1540,13 @@
     if (quickStartBtn) {
       quickStartBtn.addEventListener('click', () => {
         switchTab('tab-timer');
-        // Ensure 25m Pomodoro is selected and active
-        timerMode = 'pomodoro';
-        timerDurationSeconds = 25 * 60;
-        timerSecondsLeft = 25 * 60;
+        // Ensure the 60-minute focus mode is selected and active
+        timerMode = 'focus-60';
+        timerDurationSeconds = 60 * 60;
+        timerSecondsLeft = 60 * 60;
         updateTimerDisplay();
         document.querySelectorAll('.timer-mode-btn').forEach(b => {
-          b.classList.toggle('active', b.getAttribute('data-mode') === 'pomodoro');
+          b.classList.toggle('active', b.getAttribute('data-mode') === 'focus-60');
         });
         startTimer();
         window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -1440,6 +1775,7 @@
     toggleBtn.addEventListener('click', () => {
       const isHidden = pod.classList.contains('hidden');
       if (isHidden) {
+        if (timerRunning) pauseTimer();
         pod.classList.remove('hidden');
         updateLockState();
         startSpinnerPhysics();
