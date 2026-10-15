@@ -1,0 +1,4 @@
+# StudyFlow requires ZERO external dependencies!
+# Built entirely using standard library Python 3.8+, HTML5, CSS3, and Vanilla JavaScript.
+# No pip install required. Total project size is < 200 KB (well under 3 GB).
+

@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>StudyFlow - Smart Study Planner & Time Management</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+</head>
+<body data-theme="light">
+  <!-- Main Container -->
+  <div class="app-layout">
+    <!-- Top Header Navigation -->
+    <header class="app-header">
+      <div class="header-brand">
+        <div class="brand-logo">🎓</div>
+        <div class="brand-text">
+          <h1>StudyFlow</h1>
+          <span class="brand-subtitle">Smart Planner & Time Tracker</span>
+        </div>
+      </div>
+
+      <!-- Quick KPI Chips -->
+      <div class="header-metrics">
+        <div class="metric-pill" title="Consecutive days studied">
+          <span class="pill-icon">🔥</span>
+          <span class="pill-label">Streak:</span>
+          <span class="pill-value" id="headerStreak">0 Days</span>
+        </div>
+        <div class="metric-pill" title="Today's study hours vs target">
+          <span class="pill-icon">⏱️</span>
+          <span class="pill-label">Today:</span>
+          <span class="pill-value" id="headerTodayHours">0.0h / 3.0h</span>
+        </div>
+        <div class="metric-pill" title="Time efficiency & focus rating score">
+          <span class="pill-icon">🎯</span>
+          <span class="pill-label">Efficiency:</span>
+          <span class="pill-value" id="headerEfficiency">100/100</span>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <button id="themeToggleBtn" class="btn btn-icon" title="Toggle Dark/Light Mode">
+          <span id="themeIcon">🌙</span>
+        </button>
+        <button id="openNewTaskModalBtn" class="btn btn-primary">
+          <span>➕</span> New Task
+        </button>
+      </div>
+    </header>
+
+    <!-- Navigation Tabs -->
+    <nav class="nav-tabs" role="tablist">
+      <button class="nav-tab active" data-tab="tab-dashboard" role="tab">
+        <span class="tab-icon">📊</span> Dashboard
+      </button>
+      <button class="nav-tab" data-tab="tab-planner" role="tab">
+        <span class="tab-icon">📋</span> Planner & Tasks
+      </button>
+      <button class="nav-tab" data-tab="tab-timer" role="tab">
+        <span class="tab-icon">⏱️</span> Study Timer & Pomodoro
+      </button>
+      <button class="nav-tab" data-tab="tab-analytics" role="tab">
+        <span class="tab-icon">📈</span> Time Analytics
+      </button>
+    </nav>
+
+    <!-- Main Content Views -->
+    <main class="main-content">
+      
+      <!-- ================= 1. DASHBOARD VIEW ================= -->
+      <section id="tab-dashboard" class="tab-panel active">
+        <!-- Top Stats Row -->
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-card-header">
+              <span class="stat-label">TODAY'S STUDY</span>
+              <span class="stat-badge" id="dashTodayPct">0%</span>
+            </div>
+            <div class="stat-value" id="dashTodayHours">0.0<span class="stat-unit">h</span></div>
+            <div class="stat-progress">
+              <div class="progress-bar" id="dashTodayBar" style="width: 0%"></div>
+            </div>
+            <div class="stat-subtext" id="dashTodayTarget">Target: 3.0 hours</div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-card-header">
+              <span class="stat-label">WEEKLY TARGET</span>
+              <span class="stat-badge" id="dashWeekPct">0%</span>
+            </div>
+            <div class="stat-value" id="dashWeekHours">0.0<span class="stat-unit">h</span></div>
+            <div class="stat-progress">
+              <div class="progress-bar bar-purple" id="dashWeekBar" style="width: 0%"></div>
+            </div>
+            <div class="stat-subtext" id="dashWeekTarget">Target: 22.0 hours</div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-card-header">
+              <span class="stat-label">EFFICIENCY INDEX</span>
+              <span class="stat-badge badge-green" id="dashEffRating">High</span>
+            </div>
+            <div class="stat-value" id="dashEffScore">100<span class="stat-unit">/100</span></div>
+            <div class="stat-progress">
+              <div class="progress-bar bar-green" id="dashEffBar" style="width: 100%"></div>
+            </div>
+            <div class="stat-subtext" id="dashFocusAvg">Avg Focus: 5.0 ⭐</div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-card-header">
+              <span class="stat-label">STUDY STREAK</span>
+              <span class="stat-badge badge-orange">Active</span>
+            </div>
+            <div class="stat-value" id="dashStreakVal">🔥 0<span class="stat-unit">days</span></div>
+            <div class="stat-subtext-plain" id="dashBestStreak">Best Record: 0 days</div>
+          </div>
+        </div>
+
+        <!-- Dashboard Two-Column Grid -->
+        <div class="dashboard-split">
+          <!-- Left: AI Time Coach & Recommendations -->
+          <div class="content-card coach-card">
+            <div class="card-header">
+              <div class="card-title">
+                <span class="title-icon">💡</span>
+                <h3>Time Management Coaching</h3>
+              </div>
+              <span class="tag tag-accent">Real-time Advice</span>
+            </div>
+            <p class="card-description">Smart insights based on your deadlines, study velocity, and subject balance.</p>
+            <div class="recommendations-list" id="recommendationsList">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+
+          <!-- Right: Upcoming Priority Tasks -->
+          <div class="content-card">
+            <div class="card-header">
+              <div class="card-title">
+                <span class="title-icon">⚡</span>
+                <h3>Upcoming Academic Deadlines</h3>
+              </div>
+              <button class="btn btn-sm btn-outline" id="jumpToPlannerBtn">View All</button>
+            </div>
+            <div class="quick-tasks-list" id="quickUpcomingTasks">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= 2. STUDY PLANNER & TASKS ================= -->
+      <section id="tab-planner" class="tab-panel">
+        <div class="planner-toolbar">
+          <div class="toolbar-left">
+            <div class="search-box">
+              <span class="search-icon">🔍</span>
+              <input type="text" id="taskSearchInput" placeholder="Search tasks or topics...">
+            </div>
+            <div class="filter-group">
+              <select id="filterSubjectSelect" class="form-select">
+                <option value="ALL">All Subjects</option>
+              </select>
+              <select id="filterStatusSelect" class="form-select">
+                <option value="ALL">All Statuses</option>
+                <option value="Pending">Pending</option>
+                <option value="In Progress">In Progress</option>
+                <option value="Completed">Completed</option>
+              </select>
+              <select id="filterPrioritySelect" class="form-select">
+                <option value="ALL">All Priorities</option>
+                <option value="High">High Priority</option>
+                <option value="Medium">Medium</option>
+                <option value="Low">Low</option>
+              </select>
+            </div>
+          </div>
+          <div class="toolbar-right">
+            <button class="btn btn-outline" id="toggleEisenhowerBtn">
+              <span>⚡</span> <span id="eisenhowerBtnText">Eisenhower Matrix</span>
+            </button>
+            <button class="btn btn-primary" id="plannerAddTaskBtn">
+              <span>➕</span> Add Task
+            </button>
+          </div>
+        </div>
+
+        <!-- Standard Task List View -->
+        <div id="standardTasksContainer" class="tasks-container">
+          <div class="tasks-table-card">
+            <table class="tasks-table">
+              <thead>
+                <tr>
+                  <th width="40">Done</th>
+                  <th>Task Title</th>
+                  <th>Subject</th>
+                  <th>Due Date</th>
+                  <th>Priority</th>
+                  <th>Status</th>
+                  <th>Est. / Act. Hours</th>
+                  <th width="90">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="tasksTableBody">
+                <!-- Dynamically populated -->
+              </tbody>
+            </table>
+            <div id="tasksEmptyState" class="empty-state hidden">
+              <div class="empty-icon">📝</div>
+              <h4>No tasks found</h4>
+              <p>Add a task to organize your study schedule and boost productivity.</p>
+              <button class="btn btn-primary btn-sm" id="emptyAddTaskBtn">Add First Task</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Eisenhower Matrix View (Initially Hidden) -->
+        <div id="eisenhowerContainer" class="eisenhower-grid hidden">
+          <div class="matrix-card q1">
+            <div class="matrix-header">
+              <div class="matrix-title">
+                <span class="matrix-tag tag-urgent">Q1 • DO FIRST</span>
+                <h4>Urgent & Important</h4>
+              </div>
+              <span class="badge badge-count" id="q1Count">0</span>
+            </div>
+            <p class="matrix-desc">Immediate deadlines & critical exam revisions.</p>
+            <div class="matrix-task-list" id="q1TaskList"></div>
+          </div>
+
+          <div class="matrix-card q2">
+            <div class="matrix-header">
+              <div class="matrix-title">
+                <span class="matrix-tag tag-schedule">Q2 • SCHEDULE</span>
+                <h4>Important, Not Urgent</h4>
+              </div>
+              <span class="badge badge-count" id="q2Count">0</span>
+            </div>
+            <p class="matrix-desc">Long-term mastery, deep work, project milestones.</p>
+            <div class="matrix-task-list" id="q2TaskList"></div>
+          </div>
+
+          <div class="matrix-card q3">
+            <div class="matrix-header">
+              <div class="matrix-title">
+                <span class="matrix-tag tag-delegate">Q3 • QUICK WINS</span>
+                <h4>Urgent, Lower Weight</h4>
+              </div>
+              <span class="badge badge-count" id="q3Count">0</span>
+            </div>
+            <p class="matrix-desc">Quick submissions, administrative chores, quick readings.</p>
+            <div class="matrix-task-list" id="q3TaskList"></div>
+          </div>
+
+          <div class="matrix-card q4">
+            <div class="matrix-header">
+              <div class="matrix-title">
+                <span class="matrix-tag tag-low">Q4 • LOW PRIORITY</span>
+                <h4>Neither Urgent Nor Critical</h4>
+              </div>
+              <span class="badge badge-count" id="q4Count">0</span>
+            </div>
+            <p class="matrix-desc">Optional reading, backlog ideas, non-essential tasks.</p>
+            <div class="matrix-task-list" id="q4TaskList"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= 3. TIME TRACKER & POMODORO ================= -->
+      <section id="tab-timer" class="tab-panel">
+        <div class="timer-layout">
+          <!-- Main Timer Display Box -->
+          <div class="timer-main-card">
+            <div class="timer-modes">
+              <button class="timer-mode-btn active" data-mode="pomodoro" data-duration="25">25m Pomodoro</button>
+              <button class="timer-mode-btn" data-mode="deep" data-duration="50">50m Deep Work</button>
+              <button class="timer-mode-btn" data-mode="short-break" data-duration="5">5m Short Break</button>
+              <button class="timer-mode-btn" data-mode="long-break" data-duration="15">15m Long Break</button>
+              <button class="timer-mode-btn" data-mode="stopwatch" data-duration="0">Open Stopwatch</button>
+            </div>
+
+            <!-- Context Setup: Link to Subject & Task -->
+            <div class="timer-context-bar">
+              <div class="context-field">
+                <label for="timerSubjectSelect">Studying Subject:</label>
+                <select id="timerSubjectSelect" class="form-select"></select>
+              </div>
+              <div class="context-field">
+                <label for="timerTaskSelect">Linked Task (Optional):</label>
+                <select id="timerTaskSelect" class="form-select">
+                  <option value="">General Review (No specific task)</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Big Digital Circular Clock -->
+            <div class="timer-display-wrapper">
+              <div class="timer-clock" id="timerClock">25:00</div>
+              <div class="timer-state-label" id="timerStatusLabel">Ready to begin. Put away distractions!</div>
+            </div>
+
+            <!-- Controls -->
+            <div class="timer-controls">
+              <button class="btn btn-lg btn-success" id="timerStartBtn">
+                <span class="btn-icon">▶</span> <span id="timerStartBtnText">Start Focus</span>
+              </button>
+              <button class="btn btn-lg btn-secondary" id="timerPauseBtn" disabled>
+                <span class="btn-icon">⏸</span> Pause
+              </button>
+              <button class="btn btn-lg btn-outline" id="timerResetBtn">
+                <span class="btn-icon">🔄</span> Reset
+              </button>
+              <button class="btn btn-lg btn-primary" id="timerCompleteBtn" disabled>
+                <span class="btn-icon">💾</span> Complete & Save
+              </button>
+            </div>
+
+            <!-- Focus Rating Feedback -->
+            <div class="focus-rating-box">
+              <label>How focused were you this session?</label>
+              <div class="star-rating" id="starRating">
+                <span class="star active" data-rating="1">★</span>
+                <span class="star active" data-rating="2">★</span>
+                <span class="star active" data-rating="3">★</span>
+                <span class="star active" data-rating="4">★</span>
+                <span class="star active" data-rating="5">★</span>
+              </div>
+              <span class="rating-text" id="ratingText">Laser Focused (5/5)</span>
+            </div>
+          </div>
+
+          <!-- Timer Sidebar: Guidelines & Quick Manual Log -->
+          <div class="timer-sidebar">
+            <!-- Pomodoro Principles Card -->
+            <div class="content-card">
+              <div class="card-header">
+                <div class="card-title">
+                  <span class="title-icon">🧠</span>
+                  <h3>Time Management Rules</h3>
+                </div>
+              </div>
+              <ul class="principles-list">
+                <li><strong>25-min sprints:</strong> Boosts cognitive retention and prevents mental burnout.</li>
+                <li><strong>Strict breaks:</strong> Take 5 mins away from screens after every work block.</li>
+                <li><strong>Task attribution:</strong> Logging time against tasks trains accurate time forecasting.</li>
+                <li><strong>Hydration & posture:</strong> Stand up, stretch, and drink water during pauses.</li>
+              </ul>
+            </div>
+
+            <!-- Quick Offline Log Form -->
+            <div class="content-card">
+              <div class="card-header">
+                <div class="card-title">
+                  <span class="title-icon">✍️</span>
+                  <h3>Log Offline Study Time</h3>
+                </div>
+              </div>
+              <form id="quickLogForm" class="quick-log-form">
+                <div class="form-group">
+                  <label for="manualSubSelect">Subject:</label>
+                  <select id="manualSubSelect" class="form-select" required></select>
+                </div>
+                <div class="form-row">
+                  <div class="form-group">
+                    <label for="manualMinutesInput">Minutes:</label>
+                    <input type="number" id="manualMinutesInput" class="form-input" min="5" max="720" value="60" required>
+                  </div>
+                  <div class="form-group">
+                    <label for="manualDateInput">Date:</label>
+                    <input type="date" id="manualDateInput" class="form-input" required>
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label for="manualNotesInput">Notes / Topics covered:</label>
+                  <input type="text" id="manualNotesInput" class="form-input" placeholder="e.g. Chapter 4 exercise sets">
+                </div>
+                <button type="submit" class="btn btn-primary btn-block">Log Hours</button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= 4. TIME ANALYTICS & INSIGHTS ================= -->
+      <section id="tab-analytics" class="tab-panel">
+        <div class="analytics-layout">
+          <!-- 7-Day Visual Study Chart -->
+          <div class="content-card">
+            <div class="card-header">
+              <div class="card-title">
+                <span class="title-icon">📊</span>
+                <h3>Study Hours Breakdown (Last 7 Days)</h3>
+              </div>
+              <span class="badge badge-primary" id="chartTotalHours">Total: 0.0 hrs</span>
+            </div>
+            <div class="chart-container">
+              <div class="bar-chart" id="weeklyBarChart">
+                <!-- Dynamically generated visual bars -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Subject Target vs Actual Progress -->
+          <div class="content-card">
+            <div class="card-header">
+              <div class="card-title">
+                <span class="title-icon">📚</span>
+                <h3>Subject Weekly Goals vs. Actual Hours</h3>
+              </div>
+              <button class="btn btn-sm btn-outline" id="manageSubjectsBtn">Manage Subjects</button>
+            </div>
+            <div class="subject-progress-list" id="subjectProgressList">
+              <!-- Dynamically populated progress bars -->
+            </div>
+          </div>
+
+          <!-- Recent Study Sessions Log -->
+          <div class="content-card full-width">
+            <div class="card-header">
+              <div class="card-title">
+                <span class="title-icon">📜</span>
+                <h3>Recent Study Sessions History</h3>
+              </div>
+              <div class="header-tools">
+                <button class="btn btn-sm btn-outline" id="exportDataBtn">Export JSON</button>
+                <label class="btn btn-sm btn-outline" for="importDataFileInput" style="cursor: pointer; margin: 0;">
+                  Import JSON
+                  <input type="file" id="importDataFileInput" accept=".json" style="display: none;">
+                </label>
+              </div>
+            </div>
+            <div class="table-responsive">
+              <table class="sessions-table">
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Subject</th>
+                    <th>Type</th>
+                    <th>Duration</th>
+                    <th>Focus Rating</th>
+                    <th>Notes</th>
+                  </tr>
+                </thead>
+                <tbody id="sessionsTableBody">
+                  <!-- Dynamically populated -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- ================= ADD / EDIT TASK MODAL ================= -->
+  <div class="modal-overlay hidden" id="taskModalOverlay">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 id="modalTitle">➕ Add Academic Task</h3>
+        <button class="modal-close" id="closeTaskModalBtn">&times;</button>
+      </div>
+      <form id="taskForm">
+        <div class="modal-body">
+          <input type="hidden" id="taskFormId" value="">
+          <div class="form-group">
+            <label for="taskFormTitle">Task Title *</label>
+            <input type="text" id="taskFormTitle" class="form-input" placeholder="e.g. Read Physics Chapter 5 & solve problems" required>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="taskFormSubject">Subject *</label>
+              <select id="taskFormSubject" class="form-select" required></select>
+            </div>
+            <div class="form-group">
+              <label for="taskFormDueDate">Due Date *</label>
+              <input type="date" id="taskFormDueDate" class="form-input" required>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="taskFormEstHours">Estimated Study Hours</label>
+              <input type="number" id="taskFormEstHours" class="form-input" step="0.5" min="0.5" max="40" value="2.0" required>
+            </div>
+            <div class="form-group">
+              <label for="taskFormPriority">Priority</label>
+              <select id="taskFormPriority" class="form-select">
+                <option value="High">🔴 High Priority</option>
+                <option value="Medium" selected>🟡 Medium</option>
+                <option value="Low">🔵 Low</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="taskFormNotes">Study Notes / Key Objectives</label>
+            <textarea id="taskFormNotes" class="form-input form-textarea" rows="3" placeholder="Key chapters, formulas, or assignment guidelines..."></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" id="cancelTaskModalBtn">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="saveTaskModalBtn">Save Task</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ================= MANAGE SUBJECTS MODAL ================= -->
+  <div class="modal-overlay hidden" id="subjectModalOverlay">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3>📚 Manage Subjects & Weekly Targets</h3>
+        <button class="modal-close" id="closeSubjectModalBtn">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="addSubjectForm" class="add-subject-row">
+          <input type="text" id="newSubName" class="form-input" placeholder="Subject Name (e.g. Organic Chemistry)" required>
+          <input type="number" id="newSubTarget" class="form-input" placeholder="Weekly Target (hrs)" step="0.5" min="1" max="40" value="5.0" style="width: 130px;" required>
+          <button type="submit" class="btn btn-primary">Add</button>
+        </form>
+        <div class="subjects-list-table">
+          <table class="tasks-table">
+            <thead>
+              <tr>
+                <th>Subject</th>
+                <th>Weekly Target</th>
+                <th width="70">Action</th>
+              </tr>
+            </thead>
+            <tbody id="subjectsTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" id="closeSubjectModalFooterBtn">Done</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Application Logic -->
+  <script src="app.js"></script>
+</body>
+</html>
