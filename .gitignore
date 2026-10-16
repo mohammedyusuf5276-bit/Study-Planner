@@ -21,3 +21,7 @@ ENV/
 *.sublime-project
 *.sublime-workspace
 
+# Vercel deployment output
+.vercel/
+dist/
+

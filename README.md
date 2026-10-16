@@ -140,3 +140,16 @@ Contributions, issues, and feature requests are welcome! Feel free to check the 
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
+## Deploy to Vercel
+
+This project deploys as a static site. Vercel runs `node build.mjs` to copy only `index.html`, `styles.css`, and `app.js` into `dist/`, so the local Python server and `study_data.json` are not included in the website output.
+
+To deploy:
+
+1. Push this repository to GitHub.
+2. In Vercel, choose **Add New → Project** and import the repository.
+3. Keep the project root as the Root Directory. The checked-in `vercel.json` supplies the build command and output folder.
+4. Click **Deploy**.
+
+StudyFlow data stays in each student's browser and does not sync across devices. The password screen is also browser-local; it is not an account system or a substitute for securing a device.
+

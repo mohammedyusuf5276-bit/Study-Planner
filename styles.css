@@ -188,6 +188,29 @@ body {
   gap: 0.5rem;
 }
 
+.deadline-announcement {
+  position: relative;
+  width: 2.35rem;
+  height: 2.35rem;
+  flex: 0 0 2.35rem;
+  padding: 0;
+  font-size: 1rem;
+  color: var(--warning, #92400e);
+  border-color: rgba(245, 158, 11, 0.4);
+}
+
+.deadline-announcement.has-announcement::after {
+  content: '';
+  position: absolute;
+  top: -0.15rem;
+  right: -0.15rem;
+  width: 0.6rem;
+  height: 0.6rem;
+  border: 2px solid var(--bg-card);
+  border-radius: 50%;
+  background: #dc2626;
+}
+
 .settings-trigger {
   width: 2.35rem;
   height: 2.35rem;
@@ -198,6 +221,47 @@ body {
 .focus-setting input { width: 1.1rem; height: 1.1rem; accent-color: var(--primary); flex: 0 0 auto; }
 .settings-help-card { padding: 1rem; margin: 1rem 0; border: 1px solid var(--border-color); border-radius: var(--radius-md); background: var(--bg-secondary); }
 .settings-help-card p { margin-top: 0.4rem; color: var(--text-muted); font-size: 0.875rem; }
+
+.auth-gate {
+  position: fixed;
+  inset: 0;
+  z-index: 200000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem;
+  background: rgba(15, 23, 42, 0.58);
+  backdrop-filter: blur(18px) saturate(135%);
+  -webkit-backdrop-filter: blur(18px) saturate(135%);
+}
+
+.auth-gate.hidden { display: none; }
+
+.auth-gate-card {
+  width: min(100%, 420px);
+  padding: 2rem;
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  border-radius: 22px;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.9), rgba(238, 245, 255, 0.78));
+  box-shadow: 0 28px 80px rgba(15, 23, 42, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(28px) saturate(160%);
+  -webkit-backdrop-filter: blur(28px) saturate(160%);
+}
+
+[data-theme="dark"] .auth-gate-card {
+  border-color: rgba(255, 255, 255, 0.16);
+  background: linear-gradient(145deg, rgba(31, 41, 55, 0.94), rgba(17, 24, 39, 0.88));
+  box-shadow: 0 28px 80px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+.auth-gate-mark { font-size: 2rem; margin-bottom: 0.5rem; }
+.auth-gate-eyebrow { color: var(--primary); font-size: 0.7rem; font-weight: 800; letter-spacing: 0.11em; }
+.auth-gate-card h2 { margin: 0.35rem 0; color: var(--text-main); font-size: 1.55rem; }
+.auth-gate-copy, .auth-gate-footnote { color: var(--text-muted); font-size: 0.85rem; line-height: 1.55; }
+.auth-gate-card .form-group { margin-top: 1rem; }
+.auth-gate-submit { width: 100%; margin-top: 0.4rem; }
+.auth-gate-error { margin: 0.8rem 0 0; color: var(--danger); font-size: 0.85rem; }
+.auth-gate-footnote { margin-top: 1rem; font-size: 0.72rem; }
 .settings-account { padding: 1rem; margin-bottom: 1rem; border: 1px solid var(--border-color); border-radius: var(--radius-md); background: var(--bg-secondary); }
 .settings-account h4 { margin-bottom: 0.35rem; }
 .settings-account > .card-description:last-child { margin-top: 0.65rem; }
@@ -365,7 +429,7 @@ body {
   margin-bottom: 1rem;
   gap: 0.75rem;
 }
-.header-tools { display: flex; align-items: center; gap: 0.5rem; }
+.header-tools { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 0.5rem; }
 
 .card-title {
   display: flex;
@@ -1368,6 +1432,82 @@ body {
   animation: modalScale 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+/* Frosted liquid-glass treatment for the New Task dialog. */
+#taskModalOverlay .modal-dialog {
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.78), rgba(235, 244, 255, 0.62));
+  border: 1px solid rgba(255, 255, 255, 0.78);
+  backdrop-filter: blur(28px) saturate(170%);
+  -webkit-backdrop-filter: blur(28px) saturate(170%);
+  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+#taskModalOverlay .modal-header,
+#taskModalOverlay .modal-footer {
+  background: rgba(255, 255, 255, 0.24);
+  border-color: rgba(255, 255, 255, 0.45);
+}
+
+[data-theme="dark"] #taskModalOverlay .modal-dialog {
+  background: linear-gradient(145deg, rgba(31, 41, 55, 0.84), rgba(20, 32, 52, 0.76));
+  border-color: rgba(255, 255, 255, 0.16);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.48), inset 0 1px 0 rgba(255, 255, 255, 0.14);
+}
+
+[data-theme="dark"] #taskModalOverlay .modal-header,
+[data-theme="dark"] #taskModalOverlay .modal-footer {
+  background: rgba(255, 255, 255, 0.035);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Keep every task creation entry point in the same liquid-glass style. */
+#openNewTaskModalBtn,
+#addAssignmentBtn,
+#plannerAddTaskBtn,
+#emptyAddTaskBtn {
+  color: var(--text-main);
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.62);
+  backdrop-filter: blur(18px) saturate(155%);
+  -webkit-backdrop-filter: blur(18px) saturate(155%);
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast), background var(--transition-fast);
+}
+
+#openNewTaskModalBtn:hover,
+#addAssignmentBtn:hover,
+#plannerAddTaskBtn:hover,
+#emptyAddTaskBtn:hover {
+  color: var(--text-main);
+  background: rgba(255, 255, 255, 0.34);
+  transform: translateY(-1px);
+  box-shadow: 0 12px 26px rgba(15, 23, 42, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.78);
+}
+
+[data-theme="dark"] #openNewTaskModalBtn,
+[data-theme="dark"] #addAssignmentBtn,
+[data-theme="dark"] #plannerAddTaskBtn,
+[data-theme="dark"] #emptyAddTaskBtn {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.2);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+[data-theme="dark"] #openNewTaskModalBtn:hover,
+[data-theme="dark"] #addAssignmentBtn:hover,
+[data-theme="dark"] #plannerAddTaskBtn:hover,
+[data-theme="dark"] #emptyAddTaskBtn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  box-shadow: 0 12px 26px rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+#openNewTaskModalBtn:focus-visible,
+#addAssignmentBtn:focus-visible,
+#plannerAddTaskBtn:focus-visible,
+#emptyAddTaskBtn:focus-visible {
+  outline: 3px solid rgba(96, 165, 250, 0.55);
+  outline-offset: 2px;
+}
+
 @keyframes modalScale {
   from { opacity: 0; transform: scale(0.96); }
   to { opacity: 1; transform: scale(1); }
@@ -1493,6 +1633,40 @@ body {
   box-shadow: 0 4px 15px rgba(59, 130, 246, 0.08);
 }
 
+/* Opening terms dialog; dismissal lasts until the page is refreshed. */
+.terms-dialog {
+  position: fixed;
+  z-index: 10000;
+  top: 50%;
+  left: 50%;
+  width: min(640px, calc(100vw - 2rem));
+  margin: 0;
+  padding: 1.5rem;
+  transform: translate(-50%, -50%);
+  background: var(--bg-card);
+  box-shadow: 0 0 0 100vmax rgba(15, 23, 42, 0.62), 0 20px 60px rgba(15, 23, 42, 0.3);
+  animation: none;
+}
+
+.terms-dialog .welcome-content {
+  gap: 0.5rem;
+}
+
+.terms-dialog .welcome-text p {
+  line-height: 1.65;
+}
+
+@media (max-width: 600px) {
+  .terms-dialog {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .terms-dialog .welcome-actions {
+    justify-content: flex-end;
+  }
+}
+
 @keyframes slideDownIntro {
   from {
     opacity: 0;
@@ -1573,7 +1747,7 @@ body {
 }
 
 /* ===================================================================
-   Interactive Fidget Zen Pod
+   Zen Dodge Game
    =================================================================== */
 
 .fidget-wrapper {
@@ -1650,6 +1824,7 @@ body {
   border-radius: var(--radius-md);
   font-size: 0.75rem;
   margin-top: 0.5rem;
+  display: none !important;
 }
 
 /* Floating Launch Pill Button */
@@ -1798,6 +1973,62 @@ body {
 
 .fidget-panel.active {
   display: flex;
+}
+
+.fidget-tabs,
+#fidgetPanelSpinner,
+#fidgetPanelPoppers,
+#fidgetPanelSwitch,
+#fidgetPanelBreathe {
+  display: none !important;
+}
+
+.car-game-panel {
+  gap: 0.55rem;
+}
+
+#carGameCanvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-width: 300px;
+  border: 1px solid rgba(148, 163, 184, 0.45);
+  border-radius: 12px;
+  background: #c9e9cc;
+  box-shadow: inset 0 2px 8px rgba(15, 23, 42, 0.2);
+}
+
+.car-game-toolbar,
+.car-game-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.65rem;
+  width: 100%;
+}
+
+.car-game-toolbar {
+  justify-content: space-between;
+  padding: 0 0.1rem;
+}
+
+.car-game-score {
+  color: var(--primary);
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.car-game-controls .fidget-hint {
+  margin: 0;
+  flex: 1;
+}
+
+.car-game-controls button {
+  min-width: 2.5rem;
+  min-height: 2.25rem;
+  font-size: 1.1rem;
+  touch-action: manipulation;
 }
 
 .fidget-hint {

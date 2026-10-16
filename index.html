@@ -10,24 +10,42 @@
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
 </head>
 <body data-theme="light">
-  <!-- Background Ambient Aurora Glow & Opening FX Canvas -->
+  <div class="auth-gate" id="authGate" role="dialog" aria-modal="true" aria-labelledby="authGateTitle">
+    <form class="auth-gate-card" id="authGateForm">
+      <div class="auth-gate-mark" aria-hidden="true">🔒</div>
+      <p class="auth-gate-eyebrow">STUDYFLOW SECURITY</p>
+      <h2 id="authGateTitle">Unlock StudyFlow</h2>
+      <p class="auth-gate-copy" id="authGateCopy">Enter your password to continue.</p>
+      <div class="form-group">
+        <label for="authPassword">Password</label>
+        <input id="authPassword" class="form-input" type="password" autocomplete="current-password" minlength="10" required>
+      </div>
+      <div class="form-group hidden" id="authConfirmGroup">
+        <label for="authConfirmPassword">Confirm password</label>
+        <input id="authConfirmPassword" class="form-input" type="password" autocomplete="new-password" minlength="10">
+      </div>
+      <p class="auth-gate-error hidden" id="authGateError" role="alert"></p>
+      <button class="btn btn-primary auth-gate-submit" id="authGateSubmit" type="submit">Unlock</button>
+      <p class="auth-gate-footnote">This browser-only screen lock can be bypassed by someone with access to browser data. It does not replace your laptop account password.</p>
+    </form>
+  </div>
+
+  <!-- Background Ambient Aurora Glow -->
   <div class="ambient-aurora"></div>
-  <canvas id="fxCanvas" class="fx-canvas"></canvas>
 
   <!-- Main Container -->
   <div class="app-layout">
-    <!-- Top Welcome Splash Banner -->
-    <div id="welcomeBanner" class="welcome-banner">
+    <!-- Opening Terms and Conditions Dialog -->
+    <div id="welcomeBanner" class="welcome-banner terms-dialog" role="dialog" aria-modal="true" aria-labelledby="termsTitle">
       <div class="welcome-content">
-        <div class="welcome-badge">🚀 READY TO STUDY</div>
+        <div class="welcome-badge">TERMS AND CONDITIONS</div>
         <div class="welcome-text">
-          <h3>Welcome to StudyFlow!</h3>
-          <p id="welcomeQuote">"Success is the sum of small efforts, repeated day in and day out." Let's master <strong>FRONTEND</strong>, <strong>DSA</strong>, <strong>ICP</strong>, and <strong>MATHS</strong> today!</p>
+          <h3 id="termsTitle">StudyFlow Terms and Conditions</h3>
+          <p>StudyFlow helps you organize study tasks, study time, and academic deadlines. You are responsible for the accuracy of information you add and for keeping your own backups. Your study data is stored in this browser or in the local StudyFlow server you run.</p>
         </div>
       </div>
       <div class="welcome-actions">
-        <button id="quickStartSessionBtn" class="btn btn-sm btn-primary">⚡ Quick 60m Focus</button>
-        <button id="closeWelcomeBtn" class="welcome-close" title="Dismiss">&times;</button>
+        <button id="closeWelcomeBtn" class="btn btn-sm btn-outline" title="Cancel">Cancel</button>
       </div>
     </div>
 
@@ -61,6 +79,7 @@
       </div>
 
       <div class="header-actions">
+        <button id="deadlineAnnouncementBtn" class="btn btn-sm btn-outline deadline-announcement hidden" type="button" aria-live="polite"></button>
         <button id="openSettingsBtn" class="btn btn-icon settings-trigger" title="Study settings and focus help" aria-label="Open study settings">⚙</button>
         <button id="themeToggleBtn" class="btn btn-icon" title="Toggle Dark/Light Mode">
           <span id="themeIcon">🌙</span>
@@ -195,10 +214,14 @@
                 <h3>Upcoming Academic Deadlines</h3>
               </div>
               <div class="header-tools">
+                <button class="btn btn-sm btn-outline" id="connectLmsBtn" type="button">College Portal</button>
+                <button class="btn btn-sm btn-outline" id="importLmsDeadlinesBtn" type="button" title="Import a calendar (.ics) or assignment CSV export">Import LMS Deadlines</button>
+                <input id="lmsDeadlineFile" type="file" accept=".ics,.csv,text/calendar,text/csv" hidden>
                 <button class="btn btn-sm btn-primary" id="addAssignmentBtn">+ Add Assignment</button>
                 <button class="btn btn-sm btn-outline" id="jumpToPlannerBtn">View All</button>
               </div>
             </div>
+            <p class="card-description">Choose your college portal, then import its assignment calendar (.ics) or CSV export. Reimport an updated export to refresh deadlines.</p>
             <div class="quick-tasks-list" id="quickUpcomingTasks">
               <!-- Dynamically populated -->
             </div>
@@ -524,6 +547,43 @@
   </div>
 
   <!-- ================= ADD / EDIT TASK MODAL ================= -->
+  <div class="modal-overlay hidden" id="lmsModalOverlay">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3>Connect a College Portal</h3>
+        <button class="modal-close" id="closeLmsModalBtn" type="button" aria-label="Close">&times;</button>
+      </div>
+      <form id="lmsForm">
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="lmsPlatform">Portal platform</label>
+            <select id="lmsPlatform" class="form-select">
+              <option value="Polaris LMS">Polaris LMS</option>
+              <option value="Canvas">Canvas</option>
+              <option value="Moodle">Moodle</option>
+              <option value="Blackboard Learn">Blackboard Learn</option>
+              <option value="D2L Brightspace">D2L Brightspace</option>
+              <option value="Google Classroom">Google Classroom</option>
+              <option value="Schoology">Schoology</option>
+              <option value="Other">Other college portal</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="lmsPortalUrl">Your college portal URL</label>
+            <input id="lmsPortalUrl" class="form-input" type="url" placeholder="https://lms.yourcollege.edu" required>
+          </div>
+          <p class="card-description">StudyFlow saves the portal link on this device. Sign in on your college portal, export assignments as .ics or .csv, then import them into StudyFlow. Your portal password is never requested here.</p>
+          <a id="openLmsPortalLink" class="btn btn-sm btn-outline hidden" href="#" target="_blank" rel="noopener noreferrer">Open Saved Portal</a>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" id="cancelLmsModalBtn">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Portal</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ================= ADD / EDIT TASK MODAL ================= -->
   <div class="modal-overlay hidden" id="taskModalOverlay">
     <div class="modal-dialog">
       <div class="modal-header">
@@ -654,12 +714,12 @@
     </section>
   </div>
 
-  <!-- ================= INTERACTIVE FIDGET ZEN POD ================= -->
+  <!-- ================= ZEN DODGE GAME ================= -->
   <div class="fidget-wrapper" id="fidgetWrapper">
     <!-- Floating Collapsible Pill Button -->
-    <button class="fidget-toggle-btn" id="fidgetToggleBtn" title="Study break & focus fidget pod">
+    <button class="fidget-toggle-btn" id="fidgetToggleBtn" title="Open Zen Dodge">
       <span class="fidget-icon">🌀</span>
-      <span class="fidget-btn-text">Zen Fidget</span>
+      <span class="fidget-btn-text">Zen Dodge</span>
       <span class="fidget-pulse-ring"></span>
     </button>
 
@@ -668,10 +728,10 @@
       <div class="fidget-header">
         <div class="fidget-title">
           <span class="fidget-title-icon">✨</span>
-          <h4>Focus Fidget & Zen</h4>
+          <h4>Zen Dodge</h4>
         </div>
         <div style="display: flex; align-items: center; gap: 0.4rem;">
-          <div class="fidget-lock-badge" id="fidgetLockBadge" title="Zen Fidget Hourly Lock: Locks during study focus time">
+          <div class="fidget-lock-badge" id="fidgetLockBadge" title="Zen Dodge focus lock">
             <span id="fidgetLockIcon">🔒</span> <span id="fidgetLockText">Lock: 50m/hr</span>
           </div>
           <button class="fidget-close-btn" id="fidgetCloseBtn">&times;</button>
@@ -682,7 +742,7 @@
       <div class="fidget-lock-overlay hidden" id="fidgetLockOverlay">
         <div class="lock-big-icon">🔒</div>
         <h4>Study Lock Active!</h4>
-        <p style="font-size: 0.8rem; color: var(--text-muted);">Zen Fidget is locked to keep your focus sharp and eliminate distractions.</p>
+        <p style="font-size: 0.8rem; color: var(--text-muted);">Zen Dodge is locked during focus time.</p>
         <div class="lock-countdown" id="fidgetLockCountdown">45:00</div>
         <p style="font-size: 0.75rem; color: var(--text-muted);" id="fidgetLockDesc">Fidget locked for 50 mins every hour</p>
         <div style="display: flex; gap: 0.5rem; margin-top: 0.4rem;">
@@ -691,7 +751,7 @@
         </div>
       </div>
 
-      <!-- Fidget Tabs (Hidden when locked) -->
+      <!-- Fidget options are replaced by the compact car game. -->
       <div class="fidget-tabs" id="fidgetTabsContainer">
         <button class="fidget-tab active" data-fidget="spinner">🌀 Spinner</button>
         <button class="fidget-tab" data-fidget="poppers">🫧 Bubble Pop</button>
@@ -746,8 +806,21 @@
         <span class="fidget-hint">Box Breathing: Inhale (4s) • Hold (4s) • Exhale (4s)</span>
       </div>
 
+      <div class="fidget-panel active car-game-panel" id="fidgetPanelCar">
+        <canvas id="carGameCanvas" width="300" height="180" aria-label="Car dodging game"></canvas>
+        <div class="car-game-toolbar">
+          <span id="carGameScore" class="car-game-score">Score: 0</span>
+          <button class="btn btn-sm btn-primary" id="carGameStartBtn" type="button">Start Drive</button>
+        </div>
+        <div class="car-game-controls" aria-label="Car steering controls">
+          <button class="btn btn-sm btn-outline" id="carGameLeftBtn" type="button" aria-label="Steer left">←</button>
+          <span class="fidget-hint">Use ← → or A / D to dodge traffic</span>
+          <button class="btn btn-sm btn-outline" id="carGameRightBtn" type="button" aria-label="Steer right">→</button>
+        </div>
+      </div>
+
       <!-- Hourly Lock Preference Config -->
-      <div class="lock-setting-row" id="lockSettingRow">
+      <div class="lock-setting-row" id="lockSettingRow" hidden>
         <span>🔒 Hourly Lock:</span>
         <select id="fidgetLockSettingSelect" class="form-select" style="width: auto; padding: 0.15rem 0.5rem; font-size: 0.75rem;">
           <option value="50" selected>Lock 50m / hr</option>

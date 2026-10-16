@@ -163,6 +163,107 @@
     return `${prefix}_${Math.random().toString(36).substring(2, 9)}`;
   }
 
+  function decodeCalendarText(value) {
+    return value.replace(/\\[nN]/g, '\n').replace(/\\,/g, ',').replace(/\\;/g, ';').replace(/\\\\/g, '\\').trim();
+  }
+
+  function parseLmsCalendar(text) {
+    const lines = text.replace(/\r?\n[ \t]/g, '').split(/\r?\n/);
+    const entries = [];
+    let entry = null;
+    lines.forEach(line => {
+      if (/^BEGIN:(VEVENT|VTODO)$/i.test(line)) entry = {};
+      else if (/^END:(VEVENT|VTODO)$/i.test(line)) {
+        if (entry) entries.push(entry);
+        entry = null;
+      } else if (entry) {
+        const match = line.match(/^([A-Z-]+)(?:;[^:]*)?:(.*)$/i);
+        if (match) entry[match[1].toUpperCase()] = match[2];
+      }
+    });
+    return entries.map(entry => ({
+      id: decodeCalendarText(entry.UID || ''),
+      title: decodeCalendarText(entry.SUMMARY || entry.DESCRIPTION || ''),
+      subject: decodeCalendarText(entry.CATEGORIES || ''),
+      dueDate: (entry.DUE || entry.DTSTART || '').match(/^\d{4}-?\d{2}-?\d{2}/)?.[0].replace(/-/g, '')
+    })).map(item => ({ ...item, dueDate: item.dueDate ? `${item.dueDate.slice(0, 4)}-${item.dueDate.slice(4, 6)}-${item.dueDate.slice(6, 8)}` : '' }));
+  }
+
+  function parseLmsCsv(text) {
+    const rows = [];
+    let row = [], cell = '', quoted = false;
+    for (let i = 0; i < text.length; i++) {
+      const ch = text[i];
+      if (ch === '"' && quoted && text[i + 1] === '"') { cell += '"'; i++; }
+      else if (ch === '"') quoted = !quoted;
+      else if (ch === ',' && !quoted) { row.push(cell); cell = ''; }
+      else if ((ch === '\n' || ch === '\r') && !quoted) {
+        if (ch === '\r' && text[i + 1] === '\n') i++;
+        row.push(cell); if (row.some(value => value.trim())) rows.push(row);
+        row = []; cell = '';
+      } else cell += ch;
+    }
+    row.push(cell); if (row.some(value => value.trim())) rows.push(row);
+    if (rows.length < 2) return [];
+    const headers = rows.shift().map(value => value.trim().toLowerCase().replace(/[^a-z0-9]/g, ''));
+    const get = (values, names) => {
+      const index = headers.findIndex(header => names.includes(header));
+      return index < 0 ? '' : (values[index] || '').trim();
+    };
+    return rows.map(values => {
+      const rawDate = get(values, ['duedate', 'due', 'deadline', 'date', 'duedatetime']);
+      let dueDate = rawDate.match(/^\d{4}-\d{2}-\d{2}/)?.[0] || '';
+      if (!dueDate && rawDate) {
+        const parsedDate = new Date(rawDate);
+        if (!Number.isNaN(parsedDate.getTime())) dueDate = getLocalDateValue(parsedDate);
+      }
+      return {
+        id: get(values, ['id', 'uid', 'assignmentid']),
+        title: get(values, ['title', 'name', 'assignment', 'assignmentname', 'summary']),
+        subject: get(values, ['subject', 'course', 'classname', 'category']),
+        dueDate
+      };
+    });
+  }
+
+  async function importLmsDeadlineFile(file) {
+    const text = await file.text();
+    const imported = file.name.toLowerCase().endsWith('.ics') || /BEGIN:VCALENDAR/i.test(text)
+      ? parseLmsCalendar(text)
+      : parseLmsCsv(text);
+    const subjectNames = (store.subjects || []).map(subject => subject.name);
+    let added = 0;
+    let updated = 0;
+    store.tasks = store.tasks || [];
+    imported.forEach(item => {
+      if (!item.title || !/^\d{4}-\d{2}-\d{2}$/.test(item.dueDate)) return;
+      const sourceId = item.id || `${item.title.toLowerCase()}|${item.subject.toLowerCase()}`;
+      const subject = subjectNames.find(name => name.toLowerCase() === item.subject.toLowerCase()) || subjectNames[0] || 'General';
+      const existing = store.tasks.find(task => ['lms', 'polaris'].includes(task.source) && task.external_id === sourceId);
+      if (existing) {
+        if (existing.title !== item.title || existing.due_date !== item.dueDate || existing.subject !== subject) {
+          existing.title = item.title;
+          existing.due_date = item.dueDate;
+          existing.subject = subject;
+          updated++;
+        }
+        return;
+      }
+      store.tasks.push({
+        id: generateId('polaris'), title: item.title, subject, due_date: item.dueDate,
+        estimated_hours: 1.0, actual_hours: 0, priority: 'Medium', status: 'Pending',
+        notes: `Imported from ${store.lms_connection?.platform || 'college LMS'}${item.subject ? ` · ${item.subject}` : ''}`,
+        source: 'lms', external_id: sourceId
+      });
+      added++;
+    });
+    if (added || updated) {
+      await saveData();
+      renderAll();
+    }
+    return { added, updated, read: imported.length };
+  }
+
   // ================= Web Audio API Chime =================
   function playCompletionChime() {
     try {
@@ -1148,6 +1249,7 @@
 
   function renderAll() {
     renderHeaderMetrics();
+    renderDeadlineAnnouncement();
     renderDashboard();
     renderPlanner();
     renderAnalytics();
@@ -1155,6 +1257,31 @@
     renderStudyNotes();
     renderOfflineLogs();
     renderAttendance();
+  }
+
+  function renderDeadlineAnnouncement() {
+    const announcement = document.getElementById('deadlineAnnouncementBtn');
+    if (!announcement) return;
+    const dueSoon = (store.tasks || [])
+      .filter(task => task.status !== 'Completed' && getDeadlineDaysRemaining(task.due_date) === 2)
+      .sort((a, b) => a.due_date.localeCompare(b.due_date));
+    if (!dueSoon.length) {
+      announcement.classList.add('hidden');
+      announcement.classList.remove('has-announcement');
+      announcement.textContent = '';
+      announcement.removeAttribute('title');
+      announcement.removeAttribute('aria-label');
+      return;
+    }
+    const firstTitle = dueSoon[0].title;
+    announcement.textContent = '🔔';
+    const details = dueSoon.length === 1
+      ? `Assignment due in 2 days: ${firstTitle}`
+      : `${dueSoon.length} assignments due in 2 days. First: ${firstTitle}`;
+    announcement.title = details;
+    announcement.setAttribute('aria-label', `Announcements. ${details}. Open planner.`);
+    announcement.classList.add('has-announcement');
+    announcement.classList.remove('hidden');
   }
 
   function escapeHtml(str) {
@@ -1194,6 +1321,7 @@
     const settingsOverlay = document.getElementById('settingsModalOverlay');
     const closeSettings = () => settingsOverlay.classList.add('hidden');
     document.getElementById('openSettingsBtn').addEventListener('click', () => settingsOverlay.classList.remove('hidden'));
+    document.getElementById('deadlineAnnouncementBtn').addEventListener('click', () => switchTab('tab-planner'));
     document.getElementById('closeSettingsBtn').addEventListener('click', closeSettings);
     document.getElementById('doneSettingsBtn').addEventListener('click', closeSettings);
     settingsOverlay.addEventListener('click', event => { if (event.target === settingsOverlay) closeSettings(); });
@@ -1296,6 +1424,49 @@
 
     document.getElementById('jumpToPlannerBtn').addEventListener('click', () => switchTab('tab-planner'));
     document.getElementById('addAssignmentBtn').addEventListener('click', () => openTaskModal());
+    const lmsModal = document.getElementById('lmsModalOverlay');
+    const lmsForm = document.getElementById('lmsForm');
+    const lmsPlatform = document.getElementById('lmsPlatform');
+    const lmsPortalUrl = document.getElementById('lmsPortalUrl');
+    const openPortalLink = document.getElementById('openLmsPortalLink');
+    const showLmsModal = () => {
+      lmsPlatform.value = store.lms_connection?.platform || 'Polaris LMS';
+      lmsPortalUrl.value = store.lms_connection?.url || '';
+      openPortalLink.classList.toggle('hidden', !store.lms_connection?.url);
+      if (store.lms_connection?.url) openPortalLink.href = store.lms_connection.url;
+      lmsModal.classList.remove('hidden');
+    };
+    const hideLmsModal = () => lmsModal.classList.add('hidden');
+    document.getElementById('connectLmsBtn').addEventListener('click', showLmsModal);
+    document.getElementById('closeLmsModalBtn').addEventListener('click', hideLmsModal);
+    document.getElementById('cancelLmsModalBtn').addEventListener('click', hideLmsModal);
+    lmsModal.addEventListener('click', event => { if (event.target === lmsModal) hideLmsModal(); });
+    lmsForm.addEventListener('submit', async event => {
+      event.preventDefault();
+      let url;
+      try { url = new URL(lmsPortalUrl.value.trim()); } catch { alert('Enter a valid college portal URL.'); return; }
+      if (!['https:', 'http:'].includes(url.protocol)) { alert('Use a portal URL that starts with http:// or https://.'); return; }
+      store.lms_connection = { platform: lmsPlatform.value, url: url.href };
+      await saveData();
+      hideLmsModal();
+      alert(`${store.lms_connection.platform} portal saved. Sign in there and import an .ics or .csv assignment export.`);
+    });
+    const lmsFileInput = document.getElementById('lmsDeadlineFile');
+    document.getElementById('importLmsDeadlinesBtn').addEventListener('click', () => lmsFileInput.click());
+    lmsFileInput.addEventListener('change', async () => {
+      const file = lmsFileInput.files && lmsFileInput.files[0];
+      if (!file) return;
+      try {
+        const result = await importLmsDeadlineFile(file);
+        alert(result.added || result.updated
+          ? `LMS deadlines: ${result.added} added, ${result.updated} updated.`
+          : `No new deadlines imported. ${result.read ? 'The file may contain unsupported rows or already imported deadlines.' : 'Check that the file is a college portal calendar (.ics) or assignment CSV export.'}`);
+      } catch (error) {
+        alert('Could not read that file. Export a college portal calendar (.ics) or assignment list (.csv), then try again.');
+      } finally {
+        lmsFileInput.value = '';
+      }
+    });
     const efficiencyChartDetails = document.getElementById('efficiencyChartDetails');
     const efficiencyChartToggle = document.getElementById('toggleEfficiencyChartBtn');
     efficiencyChartToggle.addEventListener('click', () => {
@@ -1517,7 +1688,7 @@
     // ================= Opening Celebration Effects =================
     initOpeningFX();
 
-    // ================= Interactive Fidget Zen Pod =================
+    // ================= Zen Dodge Game =================
     initFidgetPod();
   }
 
@@ -1637,7 +1808,7 @@
     renderFX();
   }
 
-  // ================= Interactive Fidget Zen Pod Logic =================
+  // ================= Zen Dodge Game Logic =================
   function initFidgetPod() {
     const toggleBtn = document.getElementById('fidgetToggleBtn');
     const closeBtn = document.getElementById('fidgetCloseBtn');
@@ -1647,22 +1818,13 @@
     const lockCountdown = document.getElementById('fidgetLockCountdown');
     const lockBadge = document.getElementById('fidgetLockBadge');
     const lockText = document.getElementById('fidgetLockText');
-    const lockSettingSelect = document.getElementById('fidgetLockSettingSelect');
     const emergencyUnlockBtn = document.getElementById('emergencyUnlockBtn');
     const fidgetGoStudyBtn = document.getElementById('fidgetGoStudyBtn');
 
     if (!toggleBtn || !pod) return;
 
-    // Load saved lock preference (default 50 mins locked per hour)
-    let lockMinutesPerHour = parseInt(localStorage.getItem('studyflow_fidget_lock') || '50', 10);
-    if (lockSettingSelect) {
-      lockSettingSelect.value = String(lockMinutesPerHour);
-      lockSettingSelect.addEventListener('change', (e) => {
-        lockMinutesPerHour = parseInt(e.target.value, 10);
-        localStorage.setItem('studyflow_fidget_lock', String(lockMinutesPerHour));
-        updateLockState();
-      });
-    }
+    // Zen Dodge uses a fixed focus lock; there is no user-adjustable duration setting.
+    const lockMinutesPerHour = 50;
 
     let emergencyUnlockTimestamp = 0;
 
@@ -1718,6 +1880,7 @@
       const status = getLockStatus();
 
       if (status.locked) {
+        stopCarGame();
         if (lockOverlay) lockOverlay.classList.remove('hidden');
         if (tabsContainer) tabsContainer.classList.add('hidden');
         Object.values(panels).forEach(p => { if (p) p.classList.remove('active'); });
@@ -1731,12 +1894,8 @@
         if (lockOverlay) lockOverlay.classList.add('hidden');
         if (tabsContainer) tabsContainer.classList.remove('hidden');
 
-        // Restore active panel
-        const currentActiveTab = document.querySelector('.fidget-tab.active');
-        const targetMode = currentActiveTab ? currentActiveTab.getAttribute('data-fidget') : 'spinner';
-        if (panels[targetMode]) {
-          panels[targetMode].classList.add('active');
-        }
+        // Restore the car game panel after the hourly lock clears.
+        if (panels.car) panels.car.classList.add('active');
 
         if (lockBadge) lockBadge.classList.remove('active-lock');
         if (lockText) {
@@ -1778,14 +1937,16 @@
         if (timerRunning) pauseTimer();
         pod.classList.remove('hidden');
         updateLockState();
-        startSpinnerPhysics();
+        drawCarScene();
       } else {
+        stopCarGame();
         pod.classList.add('hidden');
       }
     });
 
     if (closeBtn) {
       closeBtn.addEventListener('click', () => {
+        stopCarGame();
         pod.classList.add('hidden');
       });
     }
@@ -1793,10 +1954,7 @@
     // Fidget Tab Switching
     const tabs = document.querySelectorAll('.fidget-tab');
     const panels = {
-      spinner: document.getElementById('fidgetPanelSpinner'),
-      poppers: document.getElementById('fidgetPanelPoppers'),
-      switch: document.getElementById('fidgetPanelSwitch'),
-      breathe: document.getElementById('fidgetPanelBreathe')
+      car: document.getElementById('fidgetPanelCar')
     };
 
     tabs.forEach(tab => {
@@ -1877,6 +2035,135 @@
         // Sound unavailable in browser policy
       }
     }
+
+    // ---------------- Compact Car Dodge Game ----------------
+    const carCanvas = document.getElementById('carGameCanvas');
+    const carCtx = carCanvas ? carCanvas.getContext('2d') : null;
+    const carStartBtn = document.getElementById('carGameStartBtn');
+    const carScoreLabel = document.getElementById('carGameScore');
+    const carLanes = [90, 150, 210];
+    let carLane = 1;
+    let carObstacles = [];
+    let carScore = 0;
+    let carFrame = 0;
+    let carRunning = false;
+    let carAnimationId = null;
+
+    function drawCar(lane, y, color) {
+      if (!carCtx) return;
+      const x = carLanes[lane];
+      carCtx.fillStyle = '#111827';
+      carCtx.fillRect(x - 15, y - 12, 5, 12);
+      carCtx.fillRect(x + 10, y - 12, 5, 12);
+      carCtx.fillRect(x - 15, y + 8, 5, 12);
+      carCtx.fillRect(x + 10, y + 8, 5, 12);
+      carCtx.fillStyle = color;
+      carCtx.beginPath();
+      carCtx.roundRect(x - 11, y - 18, 22, 38, 6);
+      carCtx.fill();
+      carCtx.fillStyle = 'rgba(219, 234, 254, 0.92)';
+      carCtx.beginPath();
+      carCtx.roundRect(x - 7, y - 11, 14, 10, 3);
+      carCtx.fill();
+      carCtx.fillStyle = '#fde68a';
+      carCtx.fillRect(x - 8, y + 15, 5, 2);
+      carCtx.fillRect(x + 3, y + 15, 5, 2);
+    }
+
+    function drawCarScene(message = '') {
+      if (!carCtx || !carCanvas) return;
+      const { width, height } = carCanvas;
+      carCtx.fillStyle = '#8ecf8b';
+      carCtx.fillRect(0, 0, width, height);
+      carCtx.fillStyle = '#374151';
+      carCtx.fillRect(54, 0, 192, height);
+      carCtx.fillStyle = '#f8fafc';
+      carCtx.fillRect(50, 0, 4, height);
+      carCtx.fillRect(246, 0, 4, height);
+      carCtx.strokeStyle = 'rgba(255,255,255,0.72)';
+      carCtx.lineWidth = 3;
+      carCtx.setLineDash([15, 13]);
+      carCtx.lineDashOffset = -(carFrame % 28);
+      [120, 180].forEach(x => {
+        carCtx.beginPath(); carCtx.moveTo(x, 0); carCtx.lineTo(x, height); carCtx.stroke();
+      });
+      carCtx.setLineDash([]);
+      carObstacles.forEach(obstacle => drawCar(obstacle.lane, obstacle.y, '#ef4444'));
+      drawCar(carLane, 146, '#3b82f6');
+      if (message) {
+        carCtx.fillStyle = 'rgba(15, 23, 42, 0.72)';
+        carCtx.fillRect(54, 65, 192, 42);
+        carCtx.fillStyle = '#fff';
+        carCtx.font = 'bold 14px sans-serif';
+        carCtx.textAlign = 'center';
+        carCtx.fillText(message, width / 2, 91);
+      }
+    }
+
+    function stopCarGame() {
+      carRunning = false;
+      if (carAnimationId) cancelAnimationFrame(carAnimationId);
+      carAnimationId = null;
+    }
+
+    function endCarGame() {
+      stopCarGame();
+      if (carStartBtn) carStartBtn.textContent = 'Race Again';
+      drawCarScene('Traffic hit!');
+    }
+
+    function stepCarGame() {
+      if (!carRunning) return;
+      carFrame++;
+      const speed = 2.7 + Math.min(carScore * 0.04, 2.5);
+      if (carFrame % 48 === 0) {
+        carObstacles.push({ lane: Math.floor(Math.random() * 3), y: -24 });
+      }
+      carObstacles.forEach(obstacle => { obstacle.y += speed; });
+      if (carObstacles.some(obstacle => obstacle.lane === carLane && obstacle.y > 118 && obstacle.y < 164)) {
+        endCarGame();
+        return;
+      }
+      const passed = carObstacles.filter(obstacle => obstacle.y > 198).length;
+      if (passed) carScore += passed;
+      carObstacles = carObstacles.filter(obstacle => obstacle.y <= 198);
+      if (carScoreLabel) carScoreLabel.textContent = `Score: ${carScore}`;
+      drawCarScene();
+      carAnimationId = requestAnimationFrame(stepCarGame);
+    }
+
+    function startCarGame() {
+      stopCarGame();
+      carLane = 1;
+      carObstacles = [];
+      carScore = 0;
+      carFrame = 0;
+      carRunning = true;
+      if (carScoreLabel) carScoreLabel.textContent = 'Score: 0';
+      if (carStartBtn) carStartBtn.textContent = 'Restart';
+      stepCarGame();
+    }
+
+    function steerCar(direction) {
+      if (!carRunning) return;
+      carLane = Math.max(0, Math.min(2, carLane + direction));
+      drawCarScene();
+    }
+
+    if (carStartBtn) carStartBtn.addEventListener('click', startCarGame);
+    const carLeftBtn = document.getElementById('carGameLeftBtn');
+    const carRightBtn = document.getElementById('carGameRightBtn');
+    if (carLeftBtn) carLeftBtn.addEventListener('click', () => steerCar(-1));
+    if (carRightBtn) carRightBtn.addEventListener('click', () => steerCar(1));
+    document.addEventListener('keydown', event => {
+      if (!carRunning || pod.classList.contains('hidden')) return;
+      if (event.key === 'ArrowLeft' || event.key.toLowerCase() === 'a') {
+        event.preventDefault(); steerCar(-1);
+      } else if (event.key === 'ArrowRight' || event.key.toLowerCase() === 'd') {
+        event.preventDefault(); steerCar(1);
+      }
+    });
+    drawCarScene('Ready to drive?');
 
     // ---------------- 1. Fidget Spinner Engine ----------------
     const rotor = document.getElementById('fidgetRotor');
@@ -2049,13 +2336,111 @@
     }
   }
 
+  // ================= App Authentication Gate =================
+  async function authenticateBeforeOpening() {
+    const gate = document.getElementById('authGate');
+    const form = document.getElementById('authGateForm');
+    const passwordInput = document.getElementById('authPassword');
+    const confirmGroup = document.getElementById('authConfirmGroup');
+    const confirmInput = document.getElementById('authConfirmPassword');
+    const title = document.getElementById('authGateTitle');
+    const copy = document.getElementById('authGateCopy');
+    const submit = document.getElementById('authGateSubmit');
+    const error = document.getElementById('authGateError');
+    const saltKey = 'studyflow_auth_salt_v1';
+    const hashKey = 'studyflow_auth_hash_v1';
+    const isSetup = !localStorage.getItem(saltKey) || !localStorage.getItem(hashKey);
+    const appLayout = document.querySelector('.app-layout');
+    const fidgetWrapper = document.getElementById('fidgetWrapper');
+    if (appLayout) appLayout.inert = true;
+    if (fidgetWrapper) fidgetWrapper.inert = true;
+
+    if (!window.crypto?.subtle) {
+      title.textContent = 'Secure browser required';
+      copy.textContent = 'StudyFlow needs Web Crypto to set up this password lock. Open it through the local server or a secure HTTPS site.';
+      passwordInput.disabled = true;
+      confirmInput.disabled = true;
+      submit.disabled = true;
+      gate.classList.remove('hidden');
+      return new Promise(() => {});
+    }
+
+    if (isSetup) {
+      title.textContent = 'Create a StudyFlow password';
+      copy.textContent = 'Set a password to protect this browser session. You will need it each time StudyFlow opens.';
+      confirmGroup.classList.remove('hidden');
+      passwordInput.autocomplete = 'new-password';
+      submit.textContent = 'Create Password';
+    }
+    gate.classList.remove('hidden');
+    passwordInput.focus();
+
+    const deriveHash = async (password, salt) => {
+      const material = await window.crypto.subtle.importKey('raw', new TextEncoder().encode(password), 'PBKDF2', false, ['deriveBits']);
+      const bits = await window.crypto.subtle.deriveBits({ name: 'PBKDF2', salt, iterations: 310000, hash: 'SHA-256' }, material, 256);
+      return Array.from(new Uint8Array(bits), byte => byte.toString(16).padStart(2, '0')).join('');
+    };
+
+    await new Promise(resolve => {
+      form.addEventListener('submit', async event => {
+        event.preventDefault();
+        error.classList.add('hidden');
+        const password = passwordInput.value;
+        if (password.length < 10) {
+          error.textContent = 'Use a password with at least 10 characters.';
+          error.classList.remove('hidden');
+          return;
+        }
+        if (isSetup && password !== confirmInput.value) {
+          error.textContent = 'The passwords do not match.';
+          error.classList.remove('hidden');
+          confirmInput.focus();
+          return;
+        }
+        submit.disabled = true;
+        submit.textContent = isSetup ? 'Creating…' : 'Checking…';
+        try {
+          if (isSetup) {
+            const salt = window.crypto.getRandomValues(new Uint8Array(16));
+            localStorage.setItem(saltKey, Array.from(salt, byte => byte.toString(16).padStart(2, '0')).join(''));
+            localStorage.setItem(hashKey, await deriveHash(password, salt));
+          } else {
+            const saltHex = localStorage.getItem(saltKey);
+            const salt = new Uint8Array(saltHex.match(/.{2}/g).map(byte => parseInt(byte, 16)));
+            const candidate = await deriveHash(password, salt);
+            const expected = localStorage.getItem(hashKey);
+            let diff = candidate.length ^ expected.length;
+            for (let i = 0; i < Math.min(candidate.length, expected.length); i++) diff |= candidate.charCodeAt(i) ^ expected.charCodeAt(i);
+            if (diff !== 0) throw new Error('Incorrect password');
+          }
+          passwordInput.value = '';
+          confirmInput.value = '';
+          gate.classList.add('hidden');
+          if (appLayout) appLayout.inert = false;
+          if (fidgetWrapper) fidgetWrapper.inert = false;
+          resolve();
+        } catch (authError) {
+          error.textContent = isSetup ? 'Could not create the password. Try again.' : 'That password is incorrect. Try again.';
+          error.classList.remove('hidden');
+          passwordInput.select();
+          submit.disabled = false;
+          submit.textContent = isSetup ? 'Create Password' : 'Unlock';
+        }
+      });
+    });
+  }
+
   // ================= App Initialization =================
   async function init() {
+    await authenticateBeforeOpening();
     await loadData();
     setupTimerSelects();
     updateTimerDisplay();
     setupEventListeners();
     renderAll();
+    if ((store.tasks || []).some(task => task.status !== 'Completed' && getDeadlineDaysRemaining(task.due_date) === 2)) {
+      switchTab('tab-planner');
+    }
   }
 
   // Run on DOM ready
