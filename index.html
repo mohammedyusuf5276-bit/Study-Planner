@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>StudyFlow - Smart Study Planner & Time Management</title>
-  <link rel="stylesheet" href="styles.css?v=auth-4">
+  <link rel="stylesheet" href="styles.css?v=auth-5">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
@@ -503,19 +503,20 @@
         <div class="content-card">
           <div class="card-header">
             <div class="card-title"><h3>Account management</h3></div>
-            <button class="btn btn-sm btn-outline" id="refreshAdminUsersBtn" type="button">Refresh</button>
+            <div class="admin-header-actions"><button class="btn btn-sm btn-outline" id="toggleAllPasswordsBtn" type="button">👁️ Show all passwords</button><button class="btn btn-sm btn-outline" id="refreshAdminUsersBtn" type="button">Refresh</button></div>
           </div>
-          <p>View account names, emails, roles, and creation dates. Passwords are never shown. You can issue a one-time temporary password reset for an account.</p>
+          <p>Manage StudyFlow accounts. View registered users, emails, roles, and view/copy user passwords. You can also create accounts or reset passwords.</p>
           <form id="adminCreateUserForm" class="admin-create-user-form">
             <div class="form-group"><label for="adminNewUserName">Name</label><input id="adminNewUserName" class="form-input" type="text" maxlength="60" required></div>
             <div class="form-group"><label for="adminNewUserEmail">Email</label><input id="adminNewUserEmail" class="form-input" type="email" maxlength="254" required></div>
+            <div class="form-group"><label for="adminNewUserPassword">Password <span class="admin-optional-label">(Optional)</span></label><input id="adminNewUserPassword" class="form-input" type="text" placeholder="Auto-generated if empty" maxlength="256"></div>
             <button class="btn btn-primary" type="submit">Create account</button>
           </form>
           <div id="adminUsersStatus" role="status" aria-live="polite"></div>
           <div id="adminPasswordNotice" class="hidden" role="status" aria-live="polite"></div>
           <div class="admin-users-table-wrap">
             <table class="admin-users-table">
-              <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Created</th><th>Actions</th></tr></thead>
+              <thead><tr><th>Name</th><th>Email</th><th>Password</th><th>Role</th><th>Created</th><th>Actions</th></tr></thead>
               <tbody id="adminUsersTableBody"></tbody>
             </table>
           </div>
@@ -868,6 +869,6 @@
   </div>
 
   <!-- Application Logic -->
-  <script src="app.js?v=auth-6"></script>
+  <script src="app.js?v=auth-7"></script>
 </body>
 </html>

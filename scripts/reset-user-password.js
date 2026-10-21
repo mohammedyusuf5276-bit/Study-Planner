@@ -50,12 +50,25 @@ async function main() {
   const salt = crypto.randomBytes(16).toString('hex');
   const passwordHash = crypto.scryptSync(password, salt, 64).toString('hex');
   const sql = neon(process.env.DATABASE_URL);
-  const [user] = await sql`
-    UPDATE studyflow_users
-    SET password_salt = ${salt}, password_hash = ${passwordHash}
-    WHERE email = ${email}
-    RETURNING email
-  `;
+  try {
+    await sql`ALTER TABLE studyflow_users ADD COLUMN IF NOT EXISTS password_display text`;
+  } catch {}
+  let user;
+  try {
+    [user] = await sql`
+      UPDATE studyflow_users
+      SET password_salt = ${salt}, password_hash = ${passwordHash}, password_display = ${password}
+      WHERE email = ${email}
+      RETURNING email
+    `;
+  } catch {
+    [user] = await sql`
+      UPDATE studyflow_users
+      SET password_salt = ${salt}, password_hash = ${passwordHash}
+      WHERE email = ${email}
+      RETURNING email
+    `;
+  }
   if (!user) throw new Error('No account exists with that email.');
   console.log(`Password reset for ${user.email}. Share the temporary password securely; it cannot be recovered from Neon later.`);
 }

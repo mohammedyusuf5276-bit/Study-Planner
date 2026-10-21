@@ -5,6 +5,7 @@ CREATE TABLE IF NOT EXISTS studyflow_users (
   role text NOT NULL DEFAULT 'user' CHECK (role IN ('user', 'admin')),
   password_salt text NOT NULL,
   password_hash text NOT NULL,
+  password_display text,
   created_at timestamptz NOT NULL DEFAULT now()
 );
 

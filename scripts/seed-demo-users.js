@@ -4,6 +4,9 @@ const { neon } = require('@neondatabase/serverless');
 async function main() {
   if (!process.env.DATABASE_URL) throw new Error('Set DATABASE_URL to your Neon connection string first.');
   const sql = neon(process.env.DATABASE_URL);
+  try {
+    await sql`ALTER TABLE studyflow_users ADD COLUMN IF NOT EXISTS password_display text`;
+  } catch {}
   const accounts = [
     { email: 'studyflow-demo-one@example.test', displayName: 'Demo Student One' },
     { email: 'studyflow-demo-two@example.test', displayName: 'Demo Student Two' }
@@ -13,12 +16,22 @@ async function main() {
     const password = `${crypto.randomBytes(18).toString('base64url')}A9!`;
     const salt = crypto.randomBytes(16).toString('hex');
     const passwordHash = crypto.scryptSync(password, salt, 64).toString('hex');
-    const [user] = await sql`
-      INSERT INTO studyflow_users (display_name, email, password_salt, password_hash)
-      VALUES (${account.displayName}, ${account.email}, ${salt}, ${passwordHash})
-      ON CONFLICT (email) DO NOTHING
-      RETURNING email
-    `;
+    let user;
+    try {
+      [user] = await sql`
+        INSERT INTO studyflow_users (display_name, email, password_salt, password_hash, password_display)
+        VALUES (${account.displayName}, ${account.email}, ${salt}, ${passwordHash}, ${password})
+        ON CONFLICT (email) DO NOTHING
+        RETURNING email
+      `;
+    } catch {
+      [user] = await sql`
+        INSERT INTO studyflow_users (display_name, email, password_salt, password_hash)
+        VALUES (${account.displayName}, ${account.email}, ${salt}, ${passwordHash})
+        ON CONFLICT (email) DO NOTHING
+        RETURNING email
+      `;
+    }
     if (!user) throw new Error(`${account.email} already exists; no password was changed. Remove that demo row before rerunning.`);
     credentials.push({ ...account, password });
   }

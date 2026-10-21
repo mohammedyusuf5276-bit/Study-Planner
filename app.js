@@ -1318,11 +1318,14 @@
       });
     });
     document.getElementById('refreshAdminUsersBtn')?.addEventListener('click', loadAdminUsers);
+    document.getElementById('toggleAllPasswordsBtn')?.addEventListener('click', toggleAllAdminPasswords);
     document.getElementById('adminCreateUserForm')?.addEventListener('submit', async event => {
       event.preventDefault();
       const form = event.currentTarget;
       const name = document.getElementById('adminNewUserName');
       const email = document.getElementById('adminNewUserEmail');
+      const passwordInput = document.getElementById('adminNewUserPassword');
+      const customPassword = passwordInput?.value.trim();
       const status = document.getElementById('adminUsersStatus');
       const notice = document.getElementById('adminPasswordNotice');
       const submit = form.querySelector('button[type="submit"]');
@@ -1330,16 +1333,18 @@
       notice.classList.add('hidden');
       submit.disabled = true;
       try {
+        const payload = { action: 'create', displayName: name.value.trim(), email: email.value.trim() };
+        if (customPassword) payload.password = customPassword;
         const response = await fetch('/api/admin', {
           method: 'POST', credentials: 'same-origin',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'create', displayName: name.value.trim(), email: email.value.trim() })
+          body: JSON.stringify(payload)
         });
         const result = await response.json();
         if (!response.ok) throw new Error(result.error || 'Account creation failed.');
         form.reset();
         await loadAdminUsers();
-        notice.textContent = `Account created for ${result.email}. Generated password: ${result.temporaryPassword} — copy it now and share it securely. It will not be shown again.`;
+        notice.textContent = `Account created for ${result.email}. Password: ${result.temporaryPassword} — saved and visible in the admin table.`;
         notice.classList.remove('hidden');
       } catch (error) {
         status.textContent = error.message;
@@ -1348,10 +1353,49 @@
       }
     });
     document.getElementById('adminUsersTableBody')?.addEventListener('click', async event => {
+      const toggleBtn = event.target.closest('.admin-pwd-toggle-btn');
+      if (toggleBtn) {
+        const cell = toggleBtn.closest('.admin-password-cell');
+        const pwdVal = cell?.querySelector('.admin-password-val');
+        if (pwdVal) {
+          const raw = pwdVal.getAttribute('data-password') || '';
+          if (pwdVal.classList.contains('masked')) {
+            pwdVal.textContent = raw;
+            pwdVal.classList.remove('masked');
+            toggleBtn.textContent = '🙈';
+            toggleBtn.title = 'Hide password';
+          } else {
+            pwdVal.textContent = '••••••••••••';
+            pwdVal.classList.add('masked');
+            toggleBtn.textContent = '👁️';
+            toggleBtn.title = 'Show password';
+          }
+        }
+        return;
+      }
+
+      const copyBtn = event.target.closest('.admin-pwd-copy-btn');
+      if (copyBtn) {
+        const cell = copyBtn.closest('.admin-password-cell');
+        const pwdVal = cell?.querySelector('.admin-password-val');
+        const raw = pwdVal?.getAttribute('data-password') || '';
+        if (raw) {
+          try {
+            await navigator.clipboard.writeText(raw);
+            const orig = copyBtn.textContent;
+            copyBtn.textContent = '✓';
+            setTimeout(() => { copyBtn.textContent = orig; }, 1500);
+          } catch {
+            window.prompt('Copy password:', raw);
+          }
+        }
+        return;
+      }
+
       const button = event.target.closest('[data-reset-email]');
       if (!button) return;
       const email = button.getAttribute('data-reset-email');
-      if (!window.confirm(`Reset the password for ${email}? A new temporary password will be shown once.`)) return;
+      if (!window.confirm(`Reset the password for ${email}? A new password will be assigned and visible in the table.`)) return;
       button.disabled = true;
       const status = document.getElementById('adminUsersStatus');
       const notice = document.getElementById('adminPasswordNotice');
@@ -1364,7 +1408,8 @@
         });
         const result = await response.json();
         if (!response.ok) throw new Error(result.error || 'Password reset failed.');
-        notice.textContent = `Temporary password for ${result.email}: ${result.temporaryPassword} — copy it now and share it securely. It will not be shown again.`;
+        await loadAdminUsers();
+        notice.textContent = `New password for ${result.email}: ${result.temporaryPassword} — saved and visible in the table.`;
         notice.classList.remove('hidden');
         status.textContent = '';
       } catch (error) {
@@ -2430,6 +2475,31 @@
     return activeUser?.role === 'admin' || activeUser?.email?.toLowerCase() === 'mohammed.yusuf5276@gmail.com';
   }
 
+  let adminShowAllPasswords = false;
+
+  function toggleAllAdminPasswords() {
+    adminShowAllPasswords = !adminShowAllPasswords;
+    const btn = document.getElementById('toggleAllPasswordsBtn');
+    if (btn) {
+      btn.textContent = adminShowAllPasswords ? '🙈 Hide all passwords' : '👁️ Show all passwords';
+    }
+    document.querySelectorAll('.admin-password-val').forEach(el => {
+      const raw = el.getAttribute('data-password');
+      if (!raw) return;
+      if (adminShowAllPasswords) {
+        el.textContent = raw;
+        el.classList.remove('masked');
+      } else {
+        el.textContent = '••••••••••••';
+        el.classList.add('masked');
+      }
+    });
+    document.querySelectorAll('.admin-pwd-toggle-btn').forEach(b => {
+      b.textContent = adminShowAllPasswords ? '🙈' : '👁️';
+      b.title = adminShowAllPasswords ? 'Hide password' : 'Show password';
+    });
+  }
+
   async function loadAdminUsers() {
     const status = document.getElementById('adminUsersStatus');
     const body = document.getElementById('adminUsersTableBody');
@@ -2444,12 +2514,65 @@
       if (!response.ok) throw new Error(result.error || 'Could not load accounts.');
       for (const user of result.users) {
         const row = document.createElement('tr');
-        const created = user.created_at ? new Date(user.created_at).toLocaleDateString() : '—';
-        [user.display_name, user.email, user.role, created].forEach(value => {
-          const cell = document.createElement('td');
-          cell.textContent = value || '—';
-          row.appendChild(cell);
-        });
+        
+        // Name
+        const nameCell = document.createElement('td');
+        nameCell.textContent = user.display_name || '—';
+        row.appendChild(nameCell);
+
+        // Email
+        const emailCell = document.createElement('td');
+        emailCell.textContent = user.email || '—';
+        row.appendChild(emailCell);
+
+        // Password
+        const pwdCell = document.createElement('td');
+        if (user.password_display) {
+          const wrapper = document.createElement('div');
+          wrapper.className = 'admin-password-cell';
+
+          const val = document.createElement('span');
+          val.className = adminShowAllPasswords ? 'admin-password-val' : 'admin-password-val masked';
+          val.setAttribute('data-password', user.password_display);
+          val.textContent = adminShowAllPasswords ? user.password_display : '••••••••••••';
+          val.title = 'Click 👁️ or Copy to use';
+
+          const toggleBtn = document.createElement('button');
+          toggleBtn.type = 'button';
+          toggleBtn.className = 'admin-pwd-btn admin-pwd-toggle-btn';
+          toggleBtn.textContent = adminShowAllPasswords ? '🙈' : '👁️';
+          toggleBtn.title = adminShowAllPasswords ? 'Hide password' : 'Show password';
+
+          const copyBtn = document.createElement('button');
+          copyBtn.type = 'button';
+          copyBtn.className = 'admin-pwd-btn admin-pwd-copy-btn';
+          copyBtn.textContent = '📋';
+          copyBtn.title = 'Copy password';
+
+          wrapper.appendChild(val);
+          wrapper.appendChild(toggleBtn);
+          wrapper.appendChild(copyBtn);
+          pwdCell.appendChild(wrapper);
+        } else {
+          const untracked = document.createElement('span');
+          untracked.className = 'admin-password-untracked';
+          untracked.textContent = 'Hashed (reset to view)';
+          untracked.title = 'Password was saved before visibility tracking. Click Reset password to assign a viewable password.';
+          pwdCell.appendChild(untracked);
+        }
+        row.appendChild(pwdCell);
+
+        // Role
+        const roleCell = document.createElement('td');
+        roleCell.textContent = user.role || '—';
+        row.appendChild(roleCell);
+
+        // Created
+        const createdCell = document.createElement('td');
+        createdCell.textContent = user.created_at ? new Date(user.created_at).toLocaleDateString() : '—';
+        row.appendChild(createdCell);
+
+        // Actions
         const actionCell = document.createElement('td');
         const resetButton = document.createElement('button');
         resetButton.type = 'button';
@@ -2458,6 +2581,7 @@
         resetButton.setAttribute('data-reset-email', user.email);
         actionCell.appendChild(resetButton);
         row.appendChild(actionCell);
+
         body.appendChild(row);
       }
       status.textContent = result.users.length ? `${result.users.length} account(s)` : 'No accounts found.';

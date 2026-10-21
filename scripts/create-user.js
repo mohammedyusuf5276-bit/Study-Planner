@@ -53,12 +53,25 @@ async function main() {
   const salt = crypto.randomBytes(16).toString('hex');
   const passwordHash = crypto.scryptSync(password, salt, 64).toString('hex');
   const sql = neon(process.env.DATABASE_URL);
-  const [user] = await sql`
-    INSERT INTO studyflow_users (display_name, email, password_salt, password_hash)
-    VALUES (${displayName}, ${email}, ${salt}, ${passwordHash})
-    ON CONFLICT (email) DO NOTHING
-    RETURNING email
-  `;
+  try {
+    await sql`ALTER TABLE studyflow_users ADD COLUMN IF NOT EXISTS password_display text`;
+  } catch {}
+  let user;
+  try {
+    [user] = await sql`
+      INSERT INTO studyflow_users (display_name, email, password_salt, password_hash, password_display)
+      VALUES (${displayName}, ${email}, ${salt}, ${passwordHash}, ${password})
+      ON CONFLICT (email) DO NOTHING
+      RETURNING email
+    `;
+  } catch {
+    [user] = await sql`
+      INSERT INTO studyflow_users (display_name, email, password_salt, password_hash)
+      VALUES (${displayName}, ${email}, ${salt}, ${passwordHash})
+      ON CONFLICT (email) DO NOTHING
+      RETURNING email
+    `;
+  }
   if (!user) throw new Error('An account with this email already exists.');
   console.log(`Created StudyFlow account for ${user.email}. Share the initial password securely.`);
 }

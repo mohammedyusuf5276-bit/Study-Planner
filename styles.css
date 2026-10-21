@@ -402,6 +402,51 @@ body {
 .admin-users-table th, .admin-users-table td { padding: 0.75rem; border-bottom: 1px solid var(--border-color); white-space: nowrap; }
 .admin-users-table th { color: var(--text-muted); font-size: 0.8rem; }
 #adminUsersStatus { margin-top: 0.75rem; color: var(--text-muted); }
+.admin-header-actions { display: flex; align-items: center; gap: 0.5rem; }
+.admin-optional-label { font-weight: normal; font-size: 0.75rem; color: var(--text-muted); }
+.admin-password-cell { display: inline-flex; align-items: center; gap: 0.4rem; max-width: 280px; }
+.admin-password-val {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.82rem;
+  background: var(--bg-secondary);
+  padding: 0.25rem 0.5rem;
+  border-radius: var(--radius-sm, 4px);
+  border: 1px solid var(--border-color);
+  max-width: 170px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  user-select: text;
+}
+.admin-password-val.masked {
+  letter-spacing: 0.18em;
+  color: var(--text-muted);
+  user-select: none;
+}
+.admin-pwd-btn {
+  background: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  border-radius: var(--radius-sm, 4px);
+  padding: 0.25rem 0.45rem;
+  cursor: pointer;
+  font-size: 0.75rem;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+.admin-pwd-btn:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+  border-color: var(--border-hover);
+}
+.admin-password-untracked {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  font-style: italic;
+}
 #adminPasswordNotice { margin-top: 0.75rem; padding: 0.9rem; border-radius: var(--radius-md); background: var(--bg-secondary); overflow-wrap: anywhere; }
 
 @keyframes fadeIn {
