@@ -16,12 +16,24 @@ module.exports = async function handler(req, res) {
     await ensurePasswordColumn(sql);
 
     if (req.method === 'GET') {
-      let users;
-      try {
-        users = await sql`SELECT id, display_name, email, role, password_display, created_at FROM studyflow_users ORDER BY created_at DESC`;
-      } catch {
-        users = await sql`SELECT id, display_name, email, role, created_at FROM studyflow_users ORDER BY created_at DESC`;
-      }
+      const rows = await sql`
+        SELECT u.id, u.display_name, u.email, u.role, u.password_display, u.created_at, d.data AS study_data
+        FROM studyflow_users u
+        LEFT JOIN studyflow_data d ON d.user_id = u.id
+        ORDER BY u.created_at DESC
+      `;
+      const users = rows.map(({ study_data, ...user }) => {
+        const sessions = Array.isArray(study_data?.sessions) ? study_data.sessions : [];
+        const totalMinutes = sessions.reduce((total, session) => {
+          const minutes = Number(session?.duration_minutes);
+          return Number.isFinite(minutes) && minutes > 0 ? total + minutes : total;
+        }, 0);
+        return {
+          ...user,
+          total_study_hours: Math.round((totalMinutes / 60) * 10) / 10,
+          study_session_count: sessions.length
+        };
+      });
       return json(res, 200, { users });
     }
     if (req.method !== 'POST') return json(res, 405, { error: 'Method not allowed.' });
