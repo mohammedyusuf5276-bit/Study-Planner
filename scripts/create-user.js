@@ -8,7 +8,7 @@ function askHidden(prompt) {
   stdin.setRawMode(true);
   stdin.resume();
   return new Promise((resolve, reject) => {
-    let value = '';
+    const bytes = [];
     const onData = chunk => {
       for (const byte of chunk) {
         if (byte === 3) {
@@ -22,11 +22,14 @@ function askHidden(prompt) {
           stdin.off('data', onData);
           stdin.setRawMode(false);
           stdout.write('\n');
-          resolve(value);
+          resolve(Buffer.from(bytes).toString('utf8'));
           return;
         }
-        if (byte === 8 || byte === 127) value = value.slice(0, -1);
-        else if (byte >= 32) value += String.fromCharCode(byte);
+        if (byte === 8 || byte === 127) {
+          let index = bytes.length - 1;
+          while (index > 0 && (bytes[index] & 0xc0) === 0x80) index--;
+          if (index >= 0) bytes.length = index;
+        } else if (byte >= 32) bytes.push(byte);
       }
     };
     stdin.on('data', onData);

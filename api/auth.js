@@ -25,9 +25,7 @@ module.exports = async function handler(req, res) {
       clearSession(res);
       return json(res, 200, { ok: true });
     }
-    if (body.action === 'signup') {
-      return json(res, 403, { error: 'Public account creation is disabled. Ask the StudyFlow administrator for an account.' });
-    }
+    const action = body.action;
     const email = String(body.email || '').trim().toLowerCase();
     const password = String(body.password || '');
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254) {
@@ -37,7 +35,23 @@ module.exports = async function handler(req, res) {
       return json(res, 400, { error: 'Password must be between 10 and 256 characters.' });
     }
 
-    if (body.action === 'signin') {
+    if (action === 'signup') {
+      const displayName = String(body.displayName || '').trim();
+      if (!displayName || displayName.length > 60) return json(res, 400, { error: 'Name must be between 1 and 60 characters.' });
+      const salt = crypto.randomBytes(16).toString('hex');
+      const passwordHash = crypto.scryptSync(password, salt, 64).toString('hex');
+      const sql = database();
+      const [user] = await sql`
+        INSERT INTO studyflow_users (display_name, email, password_salt, password_hash)
+        VALUES (${displayName}, ${email}, ${salt}, ${passwordHash})
+        ON CONFLICT (email) DO NOTHING
+        RETURNING id, email, display_name
+      `;
+      if (!user) return json(res, 409, { error: 'An account with this email already exists. Sign in instead.' });
+      setSession(res, user.id);
+      return json(res, 201, { user: { id: user.id, email: user.email, displayName: user.display_name } });
+    }
+    if (action === 'signin') {
       const sql = database();
       const [user] = await sql`SELECT id, email, display_name, password_salt, password_hash FROM studyflow_users WHERE email = ${email}`;
       if (!user || !verifyPassword(password, user.password_salt, user.password_hash)) {

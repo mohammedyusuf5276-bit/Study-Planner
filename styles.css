@@ -278,6 +278,9 @@ body {
 .auth-gate-card h2 { margin: 0.35rem 0; color: var(--text-main); font-size: 1.55rem; }
 .auth-gate-copy, .auth-gate-footnote { color: var(--text-muted); font-size: 0.85rem; line-height: 1.55; }
 .auth-gate-card .form-group { margin-top: 1rem; }
+.auth-mode-switch { display: grid; grid-template-columns: 1fr 1fr; gap: 0.35rem; margin: 1rem 0 0.5rem; padding: 0.25rem; border-radius: 0.65rem; background: var(--bg-secondary); }
+.auth-mode { border: 0; border-radius: 0.45rem; padding: 0.55rem; color: var(--text-muted); background: transparent; cursor: pointer; font: inherit; }
+.auth-mode.active { color: var(--text-main); background: var(--bg-surface); box-shadow: 0 1px 4px rgba(0,0,0,.12); }
 .remember-email-option { display: flex; align-items: center; gap: 0.45rem; margin-top: 0.7rem; color: var(--text-muted); font-size: 0.8rem; }
 .remember-email-option input { accent-color: var(--primary); }
 .auth-gate-submit { width: 100%; margin-top: 0.4rem; }

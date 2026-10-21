@@ -2,7 +2,8 @@
   "private": true,
   "scripts": {
     "build": "node build.mjs",
-    "create-user": "node scripts/create-user.js"
+    "create-user": "node scripts/create-user.js",
+    "seed-demo-users": "node scripts/seed-demo-users.js"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.2.0"

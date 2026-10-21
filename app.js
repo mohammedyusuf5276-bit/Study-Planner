@@ -2317,9 +2317,18 @@
     const form = document.getElementById('authGateForm');
     const emailInput = document.getElementById('authEmail');
     const passwordInput = document.getElementById('authPassword');
+    const nameInput = document.getElementById('authName');
+    const confirmInput = document.getElementById('authConfirmPassword');
+    const nameGroup = document.getElementById('authNameGroup');
+    const confirmGroup = document.getElementById('authConfirmGroup');
+    const title = document.getElementById('authGateTitle');
+    const copy = document.getElementById('authGateCopy');
+    const showSignIn = document.getElementById('showSignIn');
+    const showSignUp = document.getElementById('showSignUp');
     const rememberEmail = document.getElementById('rememberEmail');
     const submit = document.getElementById('authGateSubmit');
     const error = document.getElementById('authGateError');
+    let authMode = 'signin';
     const appLayout = document.querySelector('.app-layout');
     const fidgetWrapper = document.getElementById('fidgetWrapper');
     if (appLayout) appLayout.inert = true;
@@ -2352,6 +2361,23 @@
         localStorage.removeItem('studyflow_remembered_email');
       }
     };
+    const setAuthMode = mode => {
+      authMode = mode;
+      const signingUp = mode === 'signup';
+      nameGroup.classList.toggle('hidden', !signingUp);
+      confirmGroup.classList.toggle('hidden', !signingUp);
+      nameInput.required = signingUp;
+      confirmInput.required = signingUp;
+      passwordInput.autocomplete = signingUp ? 'new-password' : 'current-password';
+      title.textContent = signingUp ? 'Create your StudyFlow account' : 'Sign in to StudyFlow';
+      copy.textContent = signingUp ? 'Create an account to save your study progress privately.' : 'Sign in to continue to your personal study planner.';
+      submit.textContent = signingUp ? 'Create account' : 'Sign In';
+      showSignIn.classList.toggle('active', !signingUp);
+      showSignUp.classList.toggle('active', signingUp);
+      error.classList.add('hidden');
+    };
+    showSignIn.addEventListener('click', () => setAuthMode('signin'));
+    showSignUp.addEventListener('click', () => setAuthMode('signup'));
     rememberEmail.addEventListener('change', storeRememberedEmail);
     emailInput.addEventListener('change', storeRememberedEmail);
     gate.classList.remove('hidden');
@@ -2363,16 +2389,20 @@
         error.classList.add('hidden');
         storeRememberedEmail();
         submit.disabled = true;
-        submit.textContent = 'Signing in…';
+          submit.textContent = authMode === 'signup' ? 'Creating account…' : 'Signing in…';
         try {
+            if (authMode === 'signup' && passwordInput.value !== confirmInput.value) {
+              throw new Error('The passwords do not match.');
+            }
           const response = await fetch('/api/auth', {
             method: 'POST',
             credentials: 'same-origin',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              action: 'signin',
+                action: authMode,
               email: emailInput.value.trim(),
-              password: passwordInput.value
+                password: passwordInput.value,
+                displayName: nameInput.value.trim()
             })
           });
           const result = await response.json();
@@ -2380,6 +2410,7 @@
           activeUser = result.user;
           updateAccountName();
           passwordInput.value = '';
+            confirmInput.value = '';
           gate.classList.add('hidden');
           if (appLayout) appLayout.inert = false;
           if (fidgetWrapper) fidgetWrapper.inert = false;
@@ -2388,7 +2419,7 @@
           error.textContent = authError.message;
           error.classList.remove('hidden');
           submit.disabled = false;
-          submit.textContent = 'Sign In';
+            submit.textContent = authMode === 'signup' ? 'Create account' : 'Sign In';
         }
       });
     });
