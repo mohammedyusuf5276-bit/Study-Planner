@@ -2525,17 +2525,6 @@
         emailCell.textContent = user.email || '—';
         row.appendChild(emailCell);
 
-        // Lifetime study activity saved to the user's account
-        const hoursCell = document.createElement('td');
-        hoursCell.textContent = `${(Number(user.total_study_hours) || 0).toFixed(1)} h`;
-        hoursCell.title = 'Total duration of saved study sessions';
-        row.appendChild(hoursCell);
-
-        const sessionsCell = document.createElement('td');
-        sessionsCell.textContent = String(Number(user.study_session_count) || 0);
-        sessionsCell.title = 'Number of saved study sessions';
-        row.appendChild(sessionsCell);
-
         // Password
         const pwdCell = document.createElement('td');
         if (user.password_display) {
@@ -2572,6 +2561,17 @@
           pwdCell.appendChild(untracked);
         }
         row.appendChild(pwdCell);
+
+        // Lifetime study activity saved to the user's account
+        const hoursCell = document.createElement('td');
+        hoursCell.textContent = `${(Number(user.total_study_hours) || 0).toFixed(1)} h`;
+        hoursCell.title = 'Total duration of saved study sessions';
+        row.appendChild(hoursCell);
+
+        const sessionsCell = document.createElement('td');
+        sessionsCell.textContent = String(Number(user.study_session_count) || 0);
+        sessionsCell.title = 'Number of saved study sessions';
+        row.appendChild(sessionsCell);
 
         // Role
         const roleCell = document.createElement('td');
