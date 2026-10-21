@@ -1,0 +1,6 @@
+# This repository's Python server is for local use only. Deploy the static site.
+*.py
+study_planner/
+tests/
+study_data.json
+requirements.txt
