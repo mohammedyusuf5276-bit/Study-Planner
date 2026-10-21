@@ -13,9 +13,13 @@
   <div class="auth-gate" id="authGate" role="dialog" aria-modal="true" aria-labelledby="authGateTitle">
     <form class="auth-gate-card" id="authGateForm">
       <div class="auth-gate-mark" aria-hidden="true">🔒</div>
-      <p class="auth-gate-eyebrow">STUDYFLOW SECURITY</p>
-      <h2 id="authGateTitle">Unlock StudyFlow</h2>
-      <p class="auth-gate-copy" id="authGateCopy">Enter your password to continue.</p>
+      <p class="auth-gate-eyebrow">YOUR STUDYFLOW ACCOUNT</p>
+      <h2 id="authGateTitle">Sign in to StudyFlow</h2>
+      <p class="auth-gate-copy" id="authGateCopy">Sign in to access your private study progress.</p>
+      <div class="form-group">
+        <label for="authEmail">Email</label>
+        <input id="authEmail" class="form-input" type="email" autocomplete="email" required>
+      </div>
       <div class="form-group">
         <label for="authPassword">Password</label>
         <input id="authPassword" class="form-input" type="password" autocomplete="current-password" minlength="10" required>
@@ -25,8 +29,9 @@
         <input id="authConfirmPassword" class="form-input" type="password" autocomplete="new-password" minlength="10">
       </div>
       <p class="auth-gate-error hidden" id="authGateError" role="alert"></p>
-      <button class="btn btn-primary auth-gate-submit" id="authGateSubmit" type="submit">Unlock</button>
-      <p class="auth-gate-footnote">This browser-only screen lock can be bypassed by someone with access to browser data. It does not replace your laptop account password.</p>
+      <button class="btn btn-primary auth-gate-submit" id="authGateSubmit" type="submit">Sign In</button>
+      <button class="btn auth-gate-submit" id="authModeToggle" type="button">Create a new account</button>
+      <p class="auth-gate-footnote">Your tasks and study sessions are saved to your account and are private to you.</p>
     </form>
   </div>
 
@@ -79,6 +84,7 @@
       </div>
 
       <div class="header-actions">
+        <button id="signOutBtn" class="btn btn-sm btn-outline" type="button">Sign Out</button>
         <button id="deadlineAnnouncementBtn" class="btn btn-sm btn-outline deadline-announcement hidden" type="button" aria-live="polite"></button>
         <button id="openSettingsBtn" class="btn btn-icon settings-trigger" title="Study settings and focus help" aria-label="Open study settings">⚙</button>
         <button id="themeToggleBtn" class="btn btn-icon" title="Toggle Dark/Light Mode">

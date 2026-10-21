@@ -24,4 +24,7 @@ ENV/
 # Vercel deployment output
 .vercel/
 dist/
+.env
+.env.*
+!.env.example
 

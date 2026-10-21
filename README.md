@@ -36,9 +36,9 @@ Built with **clean HTML, CSS, JavaScript, and Python** — designed to be lightw
 - **Study Streak Counter:** Tracks consecutive days of focused study to build long-term momentum.
 - **Smart Time Coach:** Proactive tips alerting you to neglected subjects, upcoming deadlines, and fatigue/break reminders.
 
-### 💾 4. Portable Dual-Mode Persistence
-- **Zero-Dependency Python Backend:** Standard library `http.server` handles local persistence in `study_data.json` with atomic writes.
-- **Browser LocalStorage Fallback:** Works completely offline even if opened directly in a browser without launching the server.
+### 💾 4. Per-Account Cloud Persistence
+- **Private accounts:** Email and password accounts keep each user's study data separate.
+- **Cross-device sync:** Tasks, subjects, sessions, and goals are stored in Neon Postgres and load after sign-in.
 - **Export & Import JSON:** One-click backup and restore for your study logs and task lists.
 
 ---
@@ -46,7 +46,7 @@ Built with **clean HTML, CSS, JavaScript, and Python** — designed to be lightw
 ## 🪶 Footprint & Performance
 
 - **Ultra-lightweight:** Entire project footprint is **under 200 KB** (less than 0.007% of a 3 GB limit).
-- **No heavy frameworks:** Zero `node_modules`, zero virtual environment bloat, zero pip installs.
+- **Small deployment:** A static frontend and one lightweight Neon serverless driver, with no frontend framework.
 - **Instant startup:** Launches in less than 0.2 seconds.
 
 ---
@@ -54,25 +54,29 @@ Built with **clean HTML, CSS, JavaScript, and Python** — designed to be lightw
 ## 🚀 Quick Start Guide
 
 ### Prerequisites
-- Python 3.8 or higher (No `pip install` required!)
-- Any modern web browser (Chrome, Edge, Firefox, Safari)
+- Node.js 20 or higher for the Vercel web app and API.
+- A Neon Postgres database with the schema in `database/schema.sql` applied.
+- Any modern web browser (Chrome, Edge, Firefox, Safari).
 
 ### Run the Application
 
-Clone the repository and run:
+For the account-backed web app, configure `DATABASE_URL` and `SESSION_SECRET` in Vercel, then deploy using the steps below. To run the Vercel app locally, link the project with the Vercel CLI, pull its environment variables, and run `npx vercel dev`.
+
+The Python CLI and desktop GUI are still available separately:
 
 ```bash
 # Clone the repository
 git clone https://github.com/your-username/study-planner.git
 cd study-planner
 
-# Launch the app (auto-opens in your browser)
-python main.py
+# Launch the CLI
+python main.py --cli
 ```
 
-*Alternatively, you can also launch with:*
+*The legacy Python static server is not used for account-backed web mode.*
+*Alternatively, you can launch the desktop GUI with:*
 ```bash
-python "Study  planner.py"
+python main.py --gui
 ```
 
 ### Optional Modes
@@ -142,14 +146,17 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Deploy to Vercel
 
-This project deploys as a static site directly from the repository root. Vercel does not need a build command or environment variables; `.vercelignore` excludes the local Python server and data files.
+StudyFlow uses Vercel for the website and API, and Neon Postgres for accounts and per-user progress. Create the database tables by running [`database/schema.sql`](database/schema.sql) in the Neon SQL Editor. Add these Vercel Project Environment Variables for Production and Preview:
+
+- `DATABASE_URL`: Neon connection string.
+- `SESSION_SECRET`: a random secret with at least 32 characters. Generate one with `node -e "console.log(require('node:crypto').randomBytes(48).toString('base64url'))"`.
 
 To deploy:
 
 1. Push this repository to GitHub.
 2. In Vercel, choose **Add New → Project** and import the repository.
-3. Keep the project root as the Root Directory. The checked-in `vercel.json` selects the **Other** framework preset and disables the build step.
-4. Click **Deploy**.
+3. Keep the project root as the Root Directory and the framework preset as **Other**. The checked-in `vercel.json` builds the static site, while the `api/` directory provides account and data endpoints.
+4. Add the two environment variables in **Settings → Environment Variables**, then redeploy.
 
-StudyFlow data stays in each student's browser and does not sync across devices. The password screen is also browser-local; it is not an account system or a substitute for securing a device.
+New accounts start with empty tasks and study sessions. Each account's data is stored in a row keyed to its user ID. The previous browser-only progress is not automatically imported into a new account.
 

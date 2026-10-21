@@ -1,0 +1,13 @@
+CREATE TABLE IF NOT EXISTS studyflow_users (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  email text NOT NULL UNIQUE,
+  password_salt text NOT NULL,
+  password_hash text NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS studyflow_data (
+  user_id uuid PRIMARY KEY REFERENCES studyflow_users(id) ON DELETE CASCADE,
+  data jsonb NOT NULL DEFAULT '{}'::jsonb,
+  updated_at timestamptz NOT NULL DEFAULT now()
+);

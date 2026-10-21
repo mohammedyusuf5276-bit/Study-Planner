@@ -1,7 +1,7 @@
 /**
  * StudyFlow - Smart Study Planner & Time Management Engine
  * Pure Vanilla JavaScript: Task Management, Pomodoro Engine, Web Audio,
- * Analytics & Dual-Mode Storage (Python Server API + LocalStorage fallback)
+ * Analytics & per-user Neon Postgres storage
  */
 
 (() => {
@@ -15,80 +15,13 @@
       { id: 'sub_icp', name: 'ICP', target_weekly_hours: 6.0, color: '#f59e0b' },
       { id: 'sub_maths', name: 'MATHS', target_weekly_hours: 6.0, color: '#8b5cf6' }
     ],
-    tasks: [
-      {
-        id: 't_fe_1',
-        title: 'Build Responsive CSS Flexbox & Grid Dashboard',
-        subject: 'FRONTEND',
-        due_date: getRelativeDate(2),
-        estimated_hours: 3.0,
-        actual_hours: 1.0,
-        priority: 'High',
-        status: 'In Progress',
-        notes: 'Modern responsive layout, CSS variables, and clean components.'
-      },
-      {
-        id: 't_dsa_1',
-        title: 'Solve 5 LeetCode Binary Tree & Graph Problems',
-        subject: 'DSA',
-        due_date: getRelativeDate(3),
-        estimated_hours: 3.5,
-        actual_hours: 0.0,
-        priority: 'High',
-        status: 'Pending',
-        notes: 'BFS, DFS traversal and lowest common ancestor.'
-      },
-      {
-        id: 't_icp_1',
-        title: 'Competitive Programming - DP & Prefix Sums',
-        subject: 'ICP',
-        due_date: getRelativeDate(4),
-        estimated_hours: 2.5,
-        actual_hours: 0.0,
-        priority: 'Medium',
-        status: 'Pending',
-        notes: 'Knapsack variants and segment trees.'
-      },
-      {
-        id: 't_maths_1',
-        title: 'Review Linear Algebra & Discrete Mathematics',
-        subject: 'MATHS',
-        due_date: getRelativeDate(1),
-        estimated_hours: 2.0,
-        actual_hours: 2.0,
-        priority: 'High',
-        status: 'Completed',
-        notes: 'Eigenvalues, determinants, and recurrence relations.'
-      }
-    ],
-    sessions: [
-      {
-        id: 's_1',
-        subject: 'FRONTEND',
-        task_id: 't_fe_1',
-        duration_minutes: 60,
-        date: getTodayDate(),
-        focus_score: 5,
-        type: 'pomodoro',
-        notes: 'Built navigation tabs and timer UI'
-      },
-      {
-        id: 's_2',
-        subject: 'MATHS',
-        task_id: 't_maths_1',
-        duration_minutes: 120,
-        date: getRelativeDate(-1),
-        focus_score: 4,
-        type: 'stopwatch',
-        notes: 'Completed discrete math chapter exercises'
-      }
-    ],
-    daily_goals: {
-      [getTodayDate()]: { target_hours: 3.0 }
-    }
+    tasks: [],
+    sessions: [],
+    daily_goals: {}
   };
 
   let store = { ...DEFAULT_DATA };
+  let activeUser = null;
 
   // Timer Runtime State
   let timerInterval = null;
@@ -294,55 +227,29 @@
 
   // ================= Storage Synchronization =================
   async function loadData() {
-    // 1. Try fetching from Python server API
-    try {
-      const res = await fetch('/api/data', { cache: 'no-cache' });
-      if (res.ok) {
-        const serverData = await res.json();
-        if (serverData && serverData.subjects) {
-          store = serverData;
-          localStorage.setItem('studyflow_data', JSON.stringify(store));
-          return;
-        }
-      }
-    } catch (err) {
-      // Python server not active or running in offline mode
-    }
-
-    // 2. Fallback to localStorage
-    const local = localStorage.getItem('studyflow_data');
-    if (local) {
-      try {
-        const parsed = JSON.parse(local);
-        // If old subjects were cached, update to new subjects
-        if (!Array.isArray(parsed.subjects)) {
-          store = { ...DEFAULT_DATA };
-          saveData();
-        } else {
-          store = { ...DEFAULT_DATA, ...parsed };
-        }
-      } catch (e) {
-        store = { ...DEFAULT_DATA };
-      }
+    const response = await fetch('/api/data', { credentials: 'same-origin' });
+    if (!response.ok) throw new Error((await response.json()).error || 'Could not load saved progress.');
+    const result = await response.json();
+    if (result.data && Array.isArray(result.data.subjects)) {
+      store = { ...DEFAULT_DATA, ...result.data };
     } else {
-      store = { ...DEFAULT_DATA };
-      saveData();
+      store = structuredClone(DEFAULT_DATA);
+      await saveData();
     }
   }
 
   async function saveData() {
-    // Save to localStorage immediately
-    localStorage.setItem('studyflow_data', JSON.stringify(store));
-
-    // Also push to Python server if available
+    if (!activeUser) return;
     try {
-      await fetch('/api/data', {
-        method: 'POST',
+      const response = await fetch('/api/data', {
+        method: 'PUT',
+        credentials: 'same-origin',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(store)
       });
-    } catch (e) {
-      // Silently keep localStorage in sync
+      if (!response.ok) console.error('Could not sync StudyFlow data:', (await response.json()).error);
+    } catch (error) {
+      console.error('Could not sync StudyFlow data:', error.message);
     }
   }
 
@@ -2340,79 +2247,80 @@
   async function authenticateBeforeOpening() {
     const gate = document.getElementById('authGate');
     const form = document.getElementById('authGateForm');
+    const emailInput = document.getElementById('authEmail');
     const passwordInput = document.getElementById('authPassword');
     const confirmGroup = document.getElementById('authConfirmGroup');
     const confirmInput = document.getElementById('authConfirmPassword');
     const title = document.getElementById('authGateTitle');
     const copy = document.getElementById('authGateCopy');
     const submit = document.getElementById('authGateSubmit');
+    const modeToggle = document.getElementById('authModeToggle');
     const error = document.getElementById('authGateError');
-    const saltKey = 'studyflow_auth_salt_v1';
-    const hashKey = 'studyflow_auth_hash_v1';
-    const isSetup = !localStorage.getItem(saltKey) || !localStorage.getItem(hashKey);
     const appLayout = document.querySelector('.app-layout');
     const fidgetWrapper = document.getElementById('fidgetWrapper');
     if (appLayout) appLayout.inert = true;
     if (fidgetWrapper) fidgetWrapper.inert = true;
 
-    if (!window.crypto?.subtle) {
-      title.textContent = 'Secure browser required';
-      copy.textContent = 'StudyFlow needs Web Crypto to set up this password lock. Open it through the local server or a secure HTTPS site.';
-      passwordInput.disabled = true;
-      confirmInput.disabled = true;
-      submit.disabled = true;
-      gate.classList.remove('hidden');
-      return new Promise(() => {});
+    try {
+      const sessionResponse = await fetch('/api/auth', { credentials: 'same-origin' });
+      const sessionResult = await sessionResponse.json();
+      if (sessionResponse.ok && sessionResult.user) {
+        activeUser = sessionResult.user;
+        if (appLayout) appLayout.inert = false;
+        if (fidgetWrapper) fidgetWrapper.inert = false;
+        return;
+      }
+    } catch {
+      error.textContent = 'Could not reach the account service. Check deployment configuration and refresh.';
+      error.classList.remove('hidden');
     }
 
-    if (isSetup) {
-      title.textContent = 'Create a StudyFlow password';
-      copy.textContent = 'Set a password to protect this browser session. You will need it each time StudyFlow opens.';
-      confirmGroup.classList.remove('hidden');
-      passwordInput.autocomplete = 'new-password';
-      submit.textContent = 'Create Password';
-    }
-    gate.classList.remove('hidden');
-    passwordInput.focus();
-
-    const deriveHash = async (password, salt) => {
-      const material = await window.crypto.subtle.importKey('raw', new TextEncoder().encode(password), 'PBKDF2', false, ['deriveBits']);
-      const bits = await window.crypto.subtle.deriveBits({ name: 'PBKDF2', salt, iterations: 310000, hash: 'SHA-256' }, material, 256);
-      return Array.from(new Uint8Array(bits), byte => byte.toString(16).padStart(2, '0')).join('');
+    let createAccount = false;
+    const setMode = () => {
+      title.textContent = createAccount ? 'Create your StudyFlow account' : 'Sign in to StudyFlow';
+      copy.textContent = createAccount ? 'Create an account to keep your study progress private and synced.' : 'Sign in to access your private study progress.';
+      confirmGroup.classList.toggle('hidden', !createAccount);
+      passwordInput.autocomplete = createAccount ? 'new-password' : 'current-password';
+      submit.textContent = createAccount ? 'Create Account' : 'Sign In';
+      modeToggle.textContent = createAccount ? 'I already have an account' : 'Create a new account';
     };
+
+    modeToggle.addEventListener('click', () => {
+      createAccount = !createAccount;
+      error.classList.add('hidden');
+      setMode();
+    });
+    setMode();
+    gate.classList.remove('hidden');
+    emailInput.focus();
 
     await new Promise(resolve => {
       form.addEventListener('submit', async event => {
         event.preventDefault();
         error.classList.add('hidden');
         const password = passwordInput.value;
-        if (password.length < 10) {
-          error.textContent = 'Use a password with at least 10 characters.';
-          error.classList.remove('hidden');
-          return;
-        }
-        if (isSetup && password !== confirmInput.value) {
+        if (createAccount && password !== confirmInput.value) {
           error.textContent = 'The passwords do not match.';
           error.classList.remove('hidden');
           confirmInput.focus();
           return;
         }
         submit.disabled = true;
-        submit.textContent = isSetup ? 'Creating…' : 'Checking…';
+        submit.textContent = createAccount ? 'Creating…' : 'Signing in…';
         try {
-          if (isSetup) {
-            const salt = window.crypto.getRandomValues(new Uint8Array(16));
-            localStorage.setItem(saltKey, Array.from(salt, byte => byte.toString(16).padStart(2, '0')).join(''));
-            localStorage.setItem(hashKey, await deriveHash(password, salt));
-          } else {
-            const saltHex = localStorage.getItem(saltKey);
-            const salt = new Uint8Array(saltHex.match(/.{2}/g).map(byte => parseInt(byte, 16)));
-            const candidate = await deriveHash(password, salt);
-            const expected = localStorage.getItem(hashKey);
-            let diff = candidate.length ^ expected.length;
-            for (let i = 0; i < Math.min(candidate.length, expected.length); i++) diff |= candidate.charCodeAt(i) ^ expected.charCodeAt(i);
-            if (diff !== 0) throw new Error('Incorrect password');
-          }
+          const response = await fetch('/api/auth', {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              action: createAccount ? 'signup' : 'signin',
+              email: emailInput.value.trim(),
+              password
+            })
+          });
+          const result = await response.json();
+          if (!response.ok) throw new Error(result.error || 'Authentication failed.');
+          activeUser = result.user;
           passwordInput.value = '';
           confirmInput.value = '';
           gate.classList.add('hidden');
@@ -2420,11 +2328,10 @@
           if (fidgetWrapper) fidgetWrapper.inert = false;
           resolve();
         } catch (authError) {
-          error.textContent = isSetup ? 'Could not create the password. Try again.' : 'That password is incorrect. Try again.';
+          error.textContent = authError.message;
           error.classList.remove('hidden');
-          passwordInput.select();
           submit.disabled = false;
-          submit.textContent = isSetup ? 'Create Password' : 'Unlock';
+          setMode();
         }
       });
     });
@@ -2437,6 +2344,15 @@
     setupTimerSelects();
     updateTimerDisplay();
     setupEventListeners();
+    document.getElementById('signOutBtn').addEventListener('click', async () => {
+      await fetch('/api/auth', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'logout' })
+      });
+      window.location.reload();
+    });
     renderAll();
     if ((store.tasks || []).some(task => task.status !== 'Completed' && getDeadlineDaysRemaining(task.due_date) === 2)) {
       switchTab('tab-planner');
