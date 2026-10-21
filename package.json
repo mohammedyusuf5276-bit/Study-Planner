@@ -3,6 +3,7 @@
   "scripts": {
     "build": "node build.mjs",
     "create-user": "node scripts/create-user.js",
+    "reset-password": "node scripts/reset-user-password.js",
     "seed-demo-users": "node scripts/seed-demo-users.js"
   },
   "dependencies": {
