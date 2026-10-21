@@ -10,10 +10,7 @@
   // ================= State & Data Model =================
   const DEFAULT_DATA = {
     subjects: [
-      { id: 'sub_frontend', name: 'FRONTEND', target_weekly_hours: 8.0, color: '#3b82f6' },
-      { id: 'sub_dsa', name: 'DSA', target_weekly_hours: 8.0, color: '#10b981' },
-      { id: 'sub_icp', name: 'ICP', target_weekly_hours: 6.0, color: '#f59e0b' },
-      { id: 'sub_maths', name: 'MATHS', target_weekly_hours: 6.0, color: '#8b5cf6' }
+      { id: 'sub_frontend', name: 'FRONTEND', target_weekly_hours: 8.0, color: '#3b82f6' }
     ],
     tasks: [
       {
@@ -26,63 +23,9 @@
         priority: 'High',
         status: 'In Progress',
         notes: 'Modern responsive layout, CSS variables, and clean components.'
-      },
-      {
-        id: 't_dsa_1',
-        title: 'Solve 5 LeetCode Binary Tree & Graph Problems',
-        subject: 'DSA',
-        due_date: getRelativeDate(3),
-        estimated_hours: 3.5,
-        actual_hours: 0.0,
-        priority: 'High',
-        status: 'Pending',
-        notes: 'BFS, DFS traversal and lowest common ancestor.'
-      },
-      {
-        id: 't_icp_1',
-        title: 'Competitive Programming - DP & Prefix Sums',
-        subject: 'ICP',
-        due_date: getRelativeDate(4),
-        estimated_hours: 2.5,
-        actual_hours: 0.0,
-        priority: 'Medium',
-        status: 'Pending',
-        notes: 'Knapsack variants and segment trees.'
-      },
-      {
-        id: 't_maths_1',
-        title: 'Review Linear Algebra & Discrete Mathematics',
-        subject: 'MATHS',
-        due_date: getRelativeDate(1),
-        estimated_hours: 2.0,
-        actual_hours: 2.0,
-        priority: 'High',
-        status: 'Completed',
-        notes: 'Eigenvalues, determinants, and recurrence relations.'
       }
     ],
-    sessions: [
-      {
-        id: 's_1',
-        subject: 'FRONTEND',
-        task_id: 't_fe_1',
-        duration_minutes: 60,
-        date: getTodayDate(),
-        focus_score: 5,
-        type: 'pomodoro',
-        notes: 'Built navigation tabs and timer UI'
-      },
-      {
-        id: 's_2',
-        subject: 'MATHS',
-        task_id: 't_maths_1',
-        duration_minutes: 120,
-        date: getRelativeDate(-1),
-        focus_score: 4,
-        type: 'stopwatch',
-        notes: 'Completed discrete math chapter exercises'
-      }
-    ],
+    sessions: [],
     daily_goals: {
       [getTodayDate()]: { target_hours: 3.0 }
     }
@@ -300,6 +243,11 @@
     const result = await response.json();
     if (result.data && Array.isArray(result.data.subjects)) {
       store = { ...DEFAULT_DATA, ...result.data };
+      // Remove the two sessions that shipped as shared demo data in older versions.
+      const legacyDemoSessionIds = new Set(['s_1', 's_2']);
+      const savedSessions = store.sessions || [];
+      store.sessions = savedSessions.filter(session => !legacyDemoSessionIds.has(session.id));
+      if (store.sessions.length !== savedSessions.length) await saveData();
     } else {
       store = structuredClone(DEFAULT_DATA);
       await saveData();
@@ -368,15 +316,15 @@
   }
 
   function calculateEfficiency() {
+    const sessions = store.sessions || [];
+    if (sessions.length === 0) return { score: 0, avgFocus: 0 };
+
     const todayHours = calculateHoursToday();
     const todayGoal = (store.daily_goals && store.daily_goals[getTodayDate()]) ? store.daily_goals[getTodayDate()].target_hours : 3.0;
     const goalRatio = Math.min(1.0, todayHours / todayGoal);
 
     // Focus average
-    const sessions = store.sessions || [];
-    const avgFocus = sessions.length > 0
-      ? sessions.reduce((acc, s) => acc + (Number(s.focus_score) || 5), 0) / sessions.length
-      : 5.0;
+    const avgFocus = sessions.reduce((acc, s) => acc + (Number(s.focus_score) || 5), 0) / sessions.length;
 
     const streak = calculateStreak().current;
     const streakBonus = Math.min(20, streak * 5);
@@ -385,7 +333,7 @@
 
     const efficiency = Math.round(streakBonus + focusScore + goalScore);
     return {
-      score: Math.min(100, Math.max(10, efficiency)),
+      score: Math.min(100, Math.max(0, efficiency)),
       avgFocus: Math.round(avgFocus * 10) / 10
     };
   }
