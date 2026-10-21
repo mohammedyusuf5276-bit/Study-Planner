@@ -2325,11 +2325,24 @@
     const copy = document.getElementById('authGateCopy');
     const showSignIn = document.getElementById('showSignIn');
     const showSignUp = document.getElementById('showSignUp');
+    const passwordToggles = [
+      [document.getElementById('toggleAuthPassword'), passwordInput, 'Show password', 'Hide password'],
+      [document.getElementById('toggleConfirmPassword'), confirmInput, 'Show password confirmation', 'Hide password confirmation']
+    ];
     const rememberEmail = document.getElementById('rememberEmail');
     const submit = document.getElementById('authGateSubmit');
     const error = document.getElementById('authGateError');
     let authMode = 'signin';
     const appLayout = document.querySelector('.app-layout');
+    passwordToggles.forEach(([button, input, showLabel, hideLabel]) => {
+      button.addEventListener('click', () => {
+        const reveal = input.type === 'password';
+        input.type = reveal ? 'text' : 'password';
+        button.textContent = reveal ? 'Hide' : 'Show';
+        button.setAttribute('aria-label', reveal ? hideLabel : showLabel);
+        button.setAttribute('aria-pressed', String(reveal));
+      });
+    });
     const fidgetWrapper = document.getElementById('fidgetWrapper');
     if (appLayout) appLayout.inert = true;
     if (fidgetWrapper) fidgetWrapper.inert = true;
@@ -2340,6 +2353,7 @@
       if (sessionResponse.ok && sessionResult.user) {
         activeUser = sessionResult.user;
         updateAccountName();
+        gate.classList.add('hidden');
         if (appLayout) appLayout.inert = false;
         if (fidgetWrapper) fidgetWrapper.inert = false;
         return;
@@ -2348,6 +2362,8 @@
       error.textContent = 'Could not reach the account service. Check deployment configuration and refresh.';
       error.classList.remove('hidden');
     }
+
+    gate.classList.remove('hidden');
 
     const rememberedEmail = localStorage.getItem('studyflow_remembered_email') || '';
     if (rememberedEmail) {
@@ -2380,7 +2396,6 @@
     showSignUp.addEventListener('click', () => setAuthMode('signup'));
     rememberEmail.addEventListener('change', storeRememberedEmail);
     emailInput.addEventListener('change', storeRememberedEmail);
-    gate.classList.remove('hidden');
     (rememberedEmail ? passwordInput : emailInput).focus();
 
     await new Promise(resolve => {

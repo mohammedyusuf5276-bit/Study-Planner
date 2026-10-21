@@ -278,6 +278,10 @@ body {
 .auth-gate-card h2 { margin: 0.35rem 0; color: var(--text-main); font-size: 1.55rem; }
 .auth-gate-copy, .auth-gate-footnote { color: var(--text-muted); font-size: 0.85rem; line-height: 1.55; }
 .auth-gate-card .form-group { margin-top: 1rem; }
+.auth-password-field { position: relative; display: flex; align-items: center; }
+.auth-password-field .form-input { width: 100%; padding-right: 4.2rem; }
+.auth-password-toggle { position: absolute; right: 0.55rem; border: 0; padding: 0.35rem 0.45rem; border-radius: 0.4rem; color: var(--primary); background: transparent; cursor: pointer; font: inherit; font-size: 0.78rem; font-weight: 700; }
+.auth-password-toggle:focus-visible { outline: 2px solid var(--primary); outline-offset: 1px; }
 .auth-mode-switch { display: grid; grid-template-columns: 1fr 1fr; gap: 0.35rem; margin: 1rem 0 0.5rem; padding: 0.25rem; border-radius: 0.65rem; background: var(--bg-secondary); }
 .auth-mode { border: 0; border-radius: 0.45rem; padding: 0.55rem; color: var(--text-muted); background: transparent; cursor: pointer; font: inherit; }
 .auth-mode.active { color: var(--text-main); background: var(--bg-surface); box-shadow: 0 1px 4px rgba(0,0,0,.12); }
