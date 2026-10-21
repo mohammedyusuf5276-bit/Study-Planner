@@ -126,6 +126,25 @@ body {
   gap: 0.75rem;
 }
 
+.brand-identity {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  width: 64px;
+  flex-shrink: 0;
+}
+
+.brand-account {
+  max-width: 100%;
+  overflow: hidden;
+  color: var(--text-muted);
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .brand-logo {
   font-size: 1.85rem;
   background: linear-gradient(135deg, var(--primary), var(--accent-purple));
@@ -259,6 +278,8 @@ body {
 .auth-gate-card h2 { margin: 0.35rem 0; color: var(--text-main); font-size: 1.55rem; }
 .auth-gate-copy, .auth-gate-footnote { color: var(--text-muted); font-size: 0.85rem; line-height: 1.55; }
 .auth-gate-card .form-group { margin-top: 1rem; }
+.remember-email-option { display: flex; align-items: center; gap: 0.45rem; margin-top: 0.7rem; color: var(--text-muted); font-size: 0.8rem; }
+.remember-email-option input { accent-color: var(--primary); }
 .auth-gate-submit { width: 100%; margin-top: 0.4rem; }
 .auth-gate-error { margin: 0.8rem 0 0; color: var(--danger); font-size: 0.85rem; }
 .auth-gate-footnote { margin-top: 1rem; font-size: 0.72rem; }

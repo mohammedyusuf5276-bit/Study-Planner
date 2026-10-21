@@ -146,7 +146,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Deploy to Vercel
 
-StudyFlow uses Vercel for the website and API, and Neon Postgres for accounts and per-user progress. Create the database tables by running [`database/schema.sql`](database/schema.sql) in the Neon SQL Editor. Add these Vercel Project Environment Variables for Production and Preview:
+StudyFlow uses Vercel for the website and API, and Neon Postgres for accounts and per-user progress. For a new database, run [`database/schema.sql`](database/schema.sql) in the Neon SQL Editor. For an existing StudyFlow database, also run [`database/add_display_name.sql`](database/add_display_name.sql) to add names to current accounts. Add these Vercel Project Environment Variables for Production and Preview:
 
 - `DATABASE_URL`: Neon connection string.
 - `SESSION_SECRET`: a random secret with at least 32 characters. Generate one with `node -e "console.log(require('node:crypto').randomBytes(48).toString('base64url'))"`.
@@ -158,5 +158,7 @@ To deploy:
 3. Keep the project root as the Root Directory and the framework preset as **Other**. The checked-in `vercel.json` builds the static site, while the `api/` directory provides account and data endpoints.
 4. Add the two environment variables in **Settings → Environment Variables**, then redeploy.
 
-New accounts start with empty tasks and study sessions. Each account's data is stored in a row keyed to its user ID. The previous browser-only progress is not automatically imported into a new account.
+Each account has a display name shown below the StudyFlow icon and starts from the shared sample baseline in `app.js`, then saves its own independent copy keyed to its user ID. To clear all accounts' saved progress and reseed them from that baseline at next sign-in, run [`database/reset_progress_to_defaults.sql`](database/reset_progress_to_defaults.sql) in Neon. This keeps account logins but discards saved task/session changes. Previous browser-only progress is not imported.
+
+Public sign-up is disabled. To create an account as the administrator, install dependencies, set `DATABASE_URL` in your local terminal, and run `npm run create-user`; it prompts for email, account name, and password without echoing the password. Passwords are stored as salted hashes and cannot be read back. Users can choose **Remember my email** on the sign-in screen; password saving is handled by their browser's password manager.
 

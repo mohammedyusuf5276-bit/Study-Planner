@@ -15,9 +15,77 @@
       { id: 'sub_icp', name: 'ICP', target_weekly_hours: 6.0, color: '#f59e0b' },
       { id: 'sub_maths', name: 'MATHS', target_weekly_hours: 6.0, color: '#8b5cf6' }
     ],
-    tasks: [],
-    sessions: [],
-    daily_goals: {}
+    tasks: [
+      {
+        id: 't_fe_1',
+        title: 'Build Responsive CSS Flexbox & Grid Dashboard',
+        subject: 'FRONTEND',
+        due_date: getRelativeDate(2),
+        estimated_hours: 3.0,
+        actual_hours: 1.0,
+        priority: 'High',
+        status: 'In Progress',
+        notes: 'Modern responsive layout, CSS variables, and clean components.'
+      },
+      {
+        id: 't_dsa_1',
+        title: 'Solve 5 LeetCode Binary Tree & Graph Problems',
+        subject: 'DSA',
+        due_date: getRelativeDate(3),
+        estimated_hours: 3.5,
+        actual_hours: 0.0,
+        priority: 'High',
+        status: 'Pending',
+        notes: 'BFS, DFS traversal and lowest common ancestor.'
+      },
+      {
+        id: 't_icp_1',
+        title: 'Competitive Programming - DP & Prefix Sums',
+        subject: 'ICP',
+        due_date: getRelativeDate(4),
+        estimated_hours: 2.5,
+        actual_hours: 0.0,
+        priority: 'Medium',
+        status: 'Pending',
+        notes: 'Knapsack variants and segment trees.'
+      },
+      {
+        id: 't_maths_1',
+        title: 'Review Linear Algebra & Discrete Mathematics',
+        subject: 'MATHS',
+        due_date: getRelativeDate(1),
+        estimated_hours: 2.0,
+        actual_hours: 2.0,
+        priority: 'High',
+        status: 'Completed',
+        notes: 'Eigenvalues, determinants, and recurrence relations.'
+      }
+    ],
+    sessions: [
+      {
+        id: 's_1',
+        subject: 'FRONTEND',
+        task_id: 't_fe_1',
+        duration_minutes: 60,
+        date: getTodayDate(),
+        focus_score: 5,
+        type: 'pomodoro',
+        notes: 'Built navigation tabs and timer UI'
+      },
+      {
+        id: 's_2',
+        subject: 'MATHS',
+        task_id: 't_maths_1',
+        duration_minutes: 120,
+        date: getRelativeDate(-1),
+        focus_score: 4,
+        type: 'stopwatch',
+        notes: 'Completed discrete math chapter exercises'
+      }
+    ],
+    daily_goals: {
+      [getTodayDate()]: { target_hours: 3.0 }
+    }
   };
 
   let store = { ...DEFAULT_DATA };
@@ -2249,12 +2317,8 @@
     const form = document.getElementById('authGateForm');
     const emailInput = document.getElementById('authEmail');
     const passwordInput = document.getElementById('authPassword');
-    const confirmGroup = document.getElementById('authConfirmGroup');
-    const confirmInput = document.getElementById('authConfirmPassword');
-    const title = document.getElementById('authGateTitle');
-    const copy = document.getElementById('authGateCopy');
+    const rememberEmail = document.getElementById('rememberEmail');
     const submit = document.getElementById('authGateSubmit');
-    const modeToggle = document.getElementById('authModeToggle');
     const error = document.getElementById('authGateError');
     const appLayout = document.querySelector('.app-layout');
     const fidgetWrapper = document.getElementById('fidgetWrapper');
@@ -2266,6 +2330,7 @@
       const sessionResult = await sessionResponse.json();
       if (sessionResponse.ok && sessionResult.user) {
         activeUser = sessionResult.user;
+        updateAccountName();
         if (appLayout) appLayout.inert = false;
         if (fidgetWrapper) fidgetWrapper.inert = false;
         return;
@@ -2275,54 +2340,46 @@
       error.classList.remove('hidden');
     }
 
-    let createAccount = false;
-    const setMode = () => {
-      title.textContent = createAccount ? 'Create your StudyFlow account' : 'Sign in to StudyFlow';
-      copy.textContent = createAccount ? 'Create an account to keep your study progress private and synced.' : 'Sign in to access your private study progress.';
-      confirmGroup.classList.toggle('hidden', !createAccount);
-      passwordInput.autocomplete = createAccount ? 'new-password' : 'current-password';
-      submit.textContent = createAccount ? 'Create Account' : 'Sign In';
-      modeToggle.textContent = createAccount ? 'I already have an account' : 'Create a new account';
+    const rememberedEmail = localStorage.getItem('studyflow_remembered_email') || '';
+    if (rememberedEmail) {
+      emailInput.value = rememberedEmail;
+      rememberEmail.checked = true;
+    }
+    const storeRememberedEmail = () => {
+      if (rememberEmail.checked && emailInput.value.trim()) {
+        localStorage.setItem('studyflow_remembered_email', emailInput.value.trim());
+      } else {
+        localStorage.removeItem('studyflow_remembered_email');
+      }
     };
-
-    modeToggle.addEventListener('click', () => {
-      createAccount = !createAccount;
-      error.classList.add('hidden');
-      setMode();
-    });
-    setMode();
+    rememberEmail.addEventListener('change', storeRememberedEmail);
+    emailInput.addEventListener('change', storeRememberedEmail);
     gate.classList.remove('hidden');
-    emailInput.focus();
+    (rememberedEmail ? passwordInput : emailInput).focus();
 
     await new Promise(resolve => {
       form.addEventListener('submit', async event => {
         event.preventDefault();
         error.classList.add('hidden');
-        const password = passwordInput.value;
-        if (createAccount && password !== confirmInput.value) {
-          error.textContent = 'The passwords do not match.';
-          error.classList.remove('hidden');
-          confirmInput.focus();
-          return;
-        }
+        storeRememberedEmail();
         submit.disabled = true;
-        submit.textContent = createAccount ? 'Creating…' : 'Signing in…';
+        submit.textContent = 'Signing in…';
         try {
           const response = await fetch('/api/auth', {
             method: 'POST',
             credentials: 'same-origin',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              action: createAccount ? 'signup' : 'signin',
+              action: 'signin',
               email: emailInput.value.trim(),
-              password
+              password: passwordInput.value
             })
           });
           const result = await response.json();
           if (!response.ok) throw new Error(result.error || 'Authentication failed.');
           activeUser = result.user;
+          updateAccountName();
           passwordInput.value = '';
-          confirmInput.value = '';
           gate.classList.add('hidden');
           if (appLayout) appLayout.inert = false;
           if (fidgetWrapper) fidgetWrapper.inert = false;
@@ -2331,10 +2388,18 @@
           error.textContent = authError.message;
           error.classList.remove('hidden');
           submit.disabled = false;
-          setMode();
+          submit.textContent = 'Sign In';
         }
       });
     });
+  }
+
+  function updateAccountName() {
+    const accountName = document.getElementById('accountName');
+    if (accountName && activeUser) {
+      accountName.textContent = activeUser.displayName || activeUser.email.split('@')[0];
+      accountName.title = activeUser.email;
+    }
   }
 
   // ================= App Initialization =================
