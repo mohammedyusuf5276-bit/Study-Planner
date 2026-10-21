@@ -8,7 +8,9 @@ module.exports = async function handler(req, res) {
     if (!userId) return json(res, 401, { error: 'Sign in to manage accounts.' });
     const sql = database();
     const [currentUser] = await sql`SELECT role FROM studyflow_users WHERE id = ${userId}`;
-    if (!currentUser || currentUser.role !== 'admin') return json(res, 403, { error: 'Admin access is required.' });
+    if (!currentUser || currentUser.role !== 'admin') {
+      return json(res, 403, { error: 'This account is not marked admin in the Neon database used by this deployment.' });
+    }
 
     if (req.method === 'GET') {
       const users = await sql`SELECT id, display_name, email, role, created_at FROM studyflow_users ORDER BY created_at DESC`;

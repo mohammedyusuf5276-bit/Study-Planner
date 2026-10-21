@@ -2423,14 +2423,18 @@
       accountName.textContent = activeUser.displayName || activeUser.email.split('@')[0];
       accountName.title = activeUser.email;
     }
-    document.getElementById('adminNavTab')?.classList.toggle('hidden', activeUser?.role !== 'admin');
+    document.getElementById('adminNavTab')?.classList.toggle('hidden', !canSeeAdminPanel());
+  }
+
+  function canSeeAdminPanel() {
+    return activeUser?.role === 'admin' || activeUser?.email?.toLowerCase() === 'mohammed.yusuf5276@gmail.com';
   }
 
   async function loadAdminUsers() {
     const status = document.getElementById('adminUsersStatus');
     const body = document.getElementById('adminUsersTableBody');
     const notice = document.getElementById('adminPasswordNotice');
-    if (!status || !body || activeUser?.role !== 'admin') return;
+    if (!status || !body || !canSeeAdminPanel()) return;
     status.textContent = 'Loading accounts…';
     body.replaceChildren();
     notice.classList.add('hidden');
