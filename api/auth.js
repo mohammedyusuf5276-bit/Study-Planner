@@ -14,10 +14,10 @@ module.exports = async function handler(req, res) {
       const userId = getUserId(req);
       if (!userId) return json(res, 200, { user: null });
       const sql = database();
-      const [user] = await sql`SELECT id, email, display_name FROM studyflow_users WHERE id = ${userId}`;
+      const [user] = await sql`SELECT id, email, display_name, role FROM studyflow_users WHERE id = ${userId}`;
       if (!user) return json(res, 200, { user: null });
       setSession(res, user.id);
-      return json(res, 200, { user: { id: user.id, email: user.email, displayName: user.display_name } });
+      return json(res, 200, { user: { id: user.id, email: user.email, displayName: user.display_name, role: user.role } });
     }
 
     if (req.method !== 'POST') return json(res, 405, { error: 'Method not allowed.' });
@@ -46,20 +46,20 @@ module.exports = async function handler(req, res) {
         INSERT INTO studyflow_users (display_name, email, password_salt, password_hash)
         VALUES (${displayName}, ${email}, ${salt}, ${passwordHash})
         ON CONFLICT (email) DO NOTHING
-        RETURNING id, email, display_name
+        RETURNING id, email, display_name, role
       `;
       if (!user) return json(res, 409, { error: 'An account with this email already exists. Sign in instead.' });
       setSession(res, user.id);
-      return json(res, 201, { user: { id: user.id, email: user.email, displayName: user.display_name } });
+      return json(res, 201, { user: { id: user.id, email: user.email, displayName: user.display_name, role: user.role } });
     }
     if (action === 'signin') {
       const sql = database();
-      const [user] = await sql`SELECT id, email, display_name, password_salt, password_hash FROM studyflow_users WHERE email = ${email}`;
+      const [user] = await sql`SELECT id, email, display_name, role, password_salt, password_hash FROM studyflow_users WHERE email = ${email}`;
       if (!user || !verifyPassword(password, user.password_salt, user.password_hash)) {
         return json(res, 401, { error: 'Email or password is incorrect.' });
       }
       setSession(res, user.id);
-      return json(res, 200, { user: { id: user.id, email: user.email, displayName: user.display_name } });
+      return json(res, 200, { user: { id: user.id, email: user.email, displayName: user.display_name, role: user.role } });
     }
     return json(res, 400, { error: 'Unknown account action.' });
   } catch (error) {

@@ -1311,7 +1311,67 @@
 
     // Navigation
     document.querySelectorAll('.nav-tab').forEach(tab => {
-      tab.addEventListener('click', () => switchTab(tab.getAttribute('data-tab')));
+      tab.addEventListener('click', () => {
+        const tabId = tab.getAttribute('data-tab');
+        switchTab(tabId);
+        if (tabId === 'tab-admin') loadAdminUsers();
+      });
+    });
+    document.getElementById('refreshAdminUsersBtn')?.addEventListener('click', loadAdminUsers);
+    document.getElementById('adminCreateUserForm')?.addEventListener('submit', async event => {
+      event.preventDefault();
+      const form = event.currentTarget;
+      const name = document.getElementById('adminNewUserName');
+      const email = document.getElementById('adminNewUserEmail');
+      const status = document.getElementById('adminUsersStatus');
+      const notice = document.getElementById('adminPasswordNotice');
+      const submit = form.querySelector('button[type="submit"]');
+      status.textContent = '';
+      notice.classList.add('hidden');
+      submit.disabled = true;
+      try {
+        const response = await fetch('/api/admin', {
+          method: 'POST', credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'create', displayName: name.value.trim(), email: email.value.trim() })
+        });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || 'Account creation failed.');
+        form.reset();
+        await loadAdminUsers();
+        notice.textContent = `Account created for ${result.email}. Generated password: ${result.temporaryPassword} — copy it now and share it securely. It will not be shown again.`;
+        notice.classList.remove('hidden');
+      } catch (error) {
+        status.textContent = error.message;
+      } finally {
+        submit.disabled = false;
+      }
+    });
+    document.getElementById('adminUsersTableBody')?.addEventListener('click', async event => {
+      const button = event.target.closest('[data-reset-email]');
+      if (!button) return;
+      const email = button.getAttribute('data-reset-email');
+      if (!window.confirm(`Reset the password for ${email}? A new temporary password will be shown once.`)) return;
+      button.disabled = true;
+      const status = document.getElementById('adminUsersStatus');
+      const notice = document.getElementById('adminPasswordNotice');
+      notice.classList.add('hidden');
+      try {
+        const response = await fetch('/api/admin', {
+          method: 'POST', credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'reset', email })
+        });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || 'Password reset failed.');
+        notice.textContent = `Temporary password for ${result.email}: ${result.temporaryPassword} — copy it now and share it securely. It will not be shown again.`;
+        notice.classList.remove('hidden');
+        status.textContent = '';
+      } catch (error) {
+        status.textContent = error.message;
+      } finally {
+        button.disabled = false;
+      }
     });
 
     document.getElementById('jumpToPlannerBtn').addEventListener('click', () => switchTab('tab-planner'));
@@ -2362,6 +2422,43 @@
     if (accountName && activeUser) {
       accountName.textContent = activeUser.displayName || activeUser.email.split('@')[0];
       accountName.title = activeUser.email;
+    }
+    document.getElementById('adminNavTab')?.classList.toggle('hidden', activeUser?.role !== 'admin');
+  }
+
+  async function loadAdminUsers() {
+    const status = document.getElementById('adminUsersStatus');
+    const body = document.getElementById('adminUsersTableBody');
+    const notice = document.getElementById('adminPasswordNotice');
+    if (!status || !body || activeUser?.role !== 'admin') return;
+    status.textContent = 'Loading accounts…';
+    body.replaceChildren();
+    notice.classList.add('hidden');
+    try {
+      const response = await fetch('/api/admin', { credentials: 'same-origin' });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || 'Could not load accounts.');
+      for (const user of result.users) {
+        const row = document.createElement('tr');
+        const created = user.created_at ? new Date(user.created_at).toLocaleDateString() : '—';
+        [user.display_name, user.email, user.role, created].forEach(value => {
+          const cell = document.createElement('td');
+          cell.textContent = value || '—';
+          row.appendChild(cell);
+        });
+        const actionCell = document.createElement('td');
+        const resetButton = document.createElement('button');
+        resetButton.type = 'button';
+        resetButton.className = 'btn btn-sm btn-outline';
+        resetButton.textContent = 'Reset password';
+        resetButton.setAttribute('data-reset-email', user.email);
+        actionCell.appendChild(resetButton);
+        row.appendChild(actionCell);
+        body.appendChild(row);
+      }
+      status.textContent = result.users.length ? `${result.users.length} account(s)` : 'No accounts found.';
+    } catch (error) {
+      status.textContent = error.message;
     }
   }
 

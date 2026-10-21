@@ -146,7 +146,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Deploy to Vercel
 
-StudyFlow uses Vercel for the website and API, and Neon Postgres for accounts and per-user progress. For a new database, run [`database/schema.sql`](database/schema.sql) in the Neon SQL Editor. For an existing StudyFlow database, also run [`database/add_display_name.sql`](database/add_display_name.sql) to add names to current accounts. Add these Vercel Project Environment Variables for Production and Preview:
+StudyFlow uses Vercel for the website and Neon Postgres for accounts and per-user progress. For a new database, run [`database/schema.sql`](database/schema.sql) in the Neon SQL Editor. For an existing StudyFlow database, also run [`database/add_display_name.sql`](database/add_display_name.sql) to add names to current accounts and [`database/add_admin_role.sql`](database/add_admin_role.sql) to add account roles and promote Mohammed Yusuf's account. Add these Vercel Project Environment Variables for Production and Preview:
 
 - `DATABASE_URL`: Neon connection string.
 - `SESSION_SECRET`: a random secret with at least 32 characters. Generate one with `node -e "console.log(require('node:crypto').randomBytes(48).toString('base64url'))"`.
@@ -159,6 +159,8 @@ To deploy:
 4. Add the two environment variables in **Settings → Environment Variables**, then redeploy.
 
 Each account has a display name shown below the StudyFlow icon and starts from the shared sample baseline in `app.js`, then saves its own independent copy keyed to its user ID. To clear all accounts' saved progress and reseed them from that baseline at next sign-in, run [`database/reset_progress_to_defaults.sql`](database/reset_progress_to_defaults.sql) in Neon. This keeps account logins but discards saved task/session changes. Previous browser-only progress is not imported.
+
+Accounts with the `admin` role see the Admin tab, where they can create accounts, list account names, emails, roles, and creation dates, or issue a password reset. Passwords are stored as salted hashes and cannot be viewed. Creating an account or resetting its password generates a password shown once in the Admin tab; share it securely. The admin API checks the role in Neon on every request.
 
 Users can create accounts from the sign-in screen. Each email can have one account, and passwords are stored as salted hashes. Users can choose **Remember my email**; password saving is handled by their browser's password manager. To create two disposable demo accounts for checking sign-in and per-user progress, install dependencies, set `DATABASE_URL` to your Neon connection string, and run `npm run seed-demo-users`. The script prints randomly generated credentials once; keep them private. It refuses to overwrite existing demo accounts. The administrator can create a named account interactively with `npm run create-user`, or reset a user's password with `npm run reset-password`. The reset command requires the Neon database connection, prompts for the account email, and hides the temporary password while you type it. Share that temporary password securely and ask the user to change it using their password manager. Neon stores only the new salt and hash; it cannot reveal the password later. Keep `DATABASE_URL` private and run administrative commands only on a trusted machine.
 
