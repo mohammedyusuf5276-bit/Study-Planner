@@ -696,17 +696,6 @@
     <section class="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
       <div class="modal-header"><h3 id="settingsTitle">⚙ Study Settings &amp; Help</h3><button class="modal-close" id="closeSettingsBtn" aria-label="Close settings">&times;</button></div>
       <div class="modal-body">
-        <div class="settings-account">
-          <h4>Student Profile</h4>
-          <p class="card-description" id="profileStatus">Not logged in on this device.</p>
-          <form id="profileLoginForm" class="profile-login-form">
-            <div class="form-group"><label for="profileNameInput">Student name</label><input id="profileNameInput" class="form-input" maxlength="60" autocomplete="name" placeholder="Enter your name" required></div>
-            <div class="form-group"><label for="profileMobileInput">Mobile number</label><input id="profileMobileInput" class="form-input" type="tel" inputmode="tel" autocomplete="tel" maxlength="24" placeholder="Enter your mobile number" required></div>
-            <button class="btn btn-primary btn-sm" type="submit">Log in</button>
-          </form>
-          <button type="button" class="btn btn-outline btn-sm hidden" id="profileLogoutBtn">Log out</button>
-          <p class="card-description">Your name and mobile number are stored in this browser only. There is no SMS verification or online account.</p>
-        </div>
         <div class="form-group focus-setting">
           <div><label for="pauseOnLeaveToggle">Pause when I leave Study Planner (required)</label><p class="card-description">Always on. The focus timer pauses when you switch tabs or apps, so away time cannot count toward attendance.</p></div>
           <input type="checkbox" id="pauseOnLeaveToggle" checked disabled>
@@ -855,6 +844,6 @@
   </div>
 
   <!-- Application Logic -->
-  <script src="app.js?v=auth-2"></script>
+  <script src="app.js?v=auth-3"></script>
 </body>
 </html>

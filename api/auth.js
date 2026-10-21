@@ -16,6 +16,7 @@ module.exports = async function handler(req, res) {
       const sql = database();
       const [user] = await sql`SELECT id, email, display_name FROM studyflow_users WHERE id = ${userId}`;
       if (!user) return json(res, 200, { user: null });
+      setSession(res, user.id);
       return json(res, 200, { user: { id: user.id, email: user.email, displayName: user.display_name } });
     }
 

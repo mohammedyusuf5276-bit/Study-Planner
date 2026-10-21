@@ -243,11 +243,19 @@
     const result = await response.json();
     if (result.data && Array.isArray(result.data.subjects)) {
       store = { ...DEFAULT_DATA, ...result.data };
-      // Remove the two sessions that shipped as shared demo data in older versions.
+      // Remove legacy starter examples from saved accounts while preserving user-created data.
       const legacyDemoSessionIds = new Set(['s_1', 's_2']);
+      const legacyDemoSubjectIds = new Set(['sub_dsa', 'sub_icp', 'sub_maths']);
+      const legacyDemoTaskIds = new Set(['t_dsa_1', 't_icp_1', 't_maths_1']);
       const savedSessions = store.sessions || [];
+      const savedSubjects = store.subjects || [];
+      const savedTasks = store.tasks || [];
       store.sessions = savedSessions.filter(session => !legacyDemoSessionIds.has(session.id));
-      if (store.sessions.length !== savedSessions.length) await saveData();
+      store.subjects = savedSubjects.filter(subject => !legacyDemoSubjectIds.has(subject.id));
+      store.tasks = savedTasks.filter(task => !legacyDemoTaskIds.has(task.id));
+      if (store.sessions.length !== savedSessions.length || store.subjects.length !== savedSubjects.length || store.tasks.length !== savedTasks.length) {
+        await saveData();
+      }
     } else {
       store = structuredClone(DEFAULT_DATA);
       await saveData();
@@ -1248,45 +1256,6 @@
     document.getElementById('closeSettingsBtn').addEventListener('click', closeSettings);
     document.getElementById('doneSettingsBtn').addEventListener('click', closeSettings);
     settingsOverlay.addEventListener('click', event => { if (event.target === settingsOverlay) closeSettings(); });
-
-    const profileStatus = document.getElementById('profileStatus');
-    const profileLoginForm = document.getElementById('profileLoginForm');
-    const profileLogoutBtn = document.getElementById('profileLogoutBtn');
-    const profileNameInput = document.getElementById('profileNameInput');
-    const profileMobileInput = document.getElementById('profileMobileInput');
-    const renderProfileStatus = () => {
-      const profileName = localStorage.getItem('studyflow_profile_name');
-      const profileMobile = localStorage.getItem('studyflow_profile_mobile');
-      const isLoggedIn = Boolean(profileName && profileMobile);
-      const maskedMobile = profileMobile ? `•••• ${profileMobile.replace(/\D/g, '').slice(-4)}` : '';
-      profileStatus.textContent = isLoggedIn ? `Logged in as ${profileName} · ${maskedMobile} on this device.` : 'Not logged in on this device.';
-      profileLoginForm.classList.toggle('hidden', isLoggedIn);
-      profileLogoutBtn.classList.toggle('hidden', !isLoggedIn);
-    };
-    profileMobileInput.addEventListener('input', () => profileMobileInput.setCustomValidity(''));
-    profileLoginForm.addEventListener('submit', event => {
-      event.preventDefault();
-      const profileName = profileNameInput.value.trim();
-      const profileMobile = profileMobileInput.value.trim();
-      const mobileDigits = profileMobile.replace(/\D/g, '');
-      if (mobileDigits.length < 7 || mobileDigits.length > 15) {
-        profileMobileInput.setCustomValidity('Enter a mobile number with 7 to 15 digits.');
-        profileMobileInput.reportValidity();
-        return;
-      }
-      if (!profileName) return;
-      localStorage.setItem('studyflow_profile_name', profileName);
-      localStorage.setItem('studyflow_profile_mobile', profileMobile);
-      profileNameInput.value = '';
-      profileMobileInput.value = '';
-      renderProfileStatus();
-    });
-    profileLogoutBtn.addEventListener('click', () => {
-      localStorage.removeItem('studyflow_profile_name');
-      localStorage.removeItem('studyflow_profile_mobile');
-      renderProfileStatus();
-    });
-    renderProfileStatus();
 
     const pauseOnLeaveToggle = document.getElementById('pauseOnLeaveToggle');
     pauseOnLeaveToggle.checked = true;
