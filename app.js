@@ -85,12 +85,27 @@
     return Math.round((due - today) / 86400000);
   }
 
-  const attendanceTimerTypes = new Set(['focus-60', 'focus-90', 'focus-120', 'stopwatch', 'pomodoro', 'deep']);
+  const attendanceSessionTypes = new Set(['focus-60', 'focus-90', 'focus-120', 'stopwatch', 'pomodoro', 'deep', 'manual']);
+
+  function getSubjectCompletionPercent(subjectName) {
+    const tasks = (store.tasks || []).filter(task => task.subject === subjectName);
+    if (!tasks.length) return 0;
+    return (tasks.filter(task => task.status === 'Completed').length / tasks.length) * 100;
+  }
+
+  function qualifiesForAttendance(session) {
+    if (!attendanceSessionTypes.has(session.type)) return false;
+    // Old manual entries have no completion snapshot, so do not count them retroactively.
+    const completion = Number.isFinite(Number(session.subject_completion_percent))
+      ? Number(session.subject_completion_percent)
+      : (session.type === 'manual' ? 0 : getSubjectCompletionPercent(session.subject));
+    return completion >= 2;
+  }
 
   function getQualifiedAttendanceMinutes(date) {
     return (store.sessions || []).reduce((total, session) => {
       const minutes = Number(session.duration_minutes) || 0;
-      return session.date === date && attendanceTimerTypes.has(session.type) && minutes >= 60 ? total + minutes : total;
+      return session.date === date && qualifiesForAttendance(session) && minutes >= 60 ? total + minutes : total;
     }, 0);
   }
 
@@ -98,7 +113,7 @@
     const minutesByDate = new Map();
     (store.sessions || []).forEach(session => {
       const minutes = Number(session.duration_minutes) || 0;
-      if (attendanceTimerTypes.has(session.type) && session.date && minutes >= 60) minutesByDate.set(session.date, (minutesByDate.get(session.date) || 0) + minutes);
+      if (qualifiesForAttendance(session) && session.date && minutes >= 60) minutesByDate.set(session.date, (minutesByDate.get(session.date) || 0) + minutes);
     });
     return new Set([...minutesByDate.entries()].filter(([, minutes]) => minutes >= 60).map(([date]) => date));
   }
@@ -324,26 +339,10 @@
   }
 
   function calculateEfficiency() {
-    const sessions = store.sessions || [];
-    if (sessions.length === 0) return { score: 0, avgFocus: 0 };
-
-    const todayHours = calculateHoursToday();
-    const todayGoal = (store.daily_goals && store.daily_goals[getTodayDate()]) ? store.daily_goals[getTodayDate()].target_hours : 3.0;
-    const goalRatio = Math.min(1.0, todayHours / todayGoal);
-
-    // Focus average
-    const avgFocus = sessions.reduce((acc, s) => acc + (Number(s.focus_score) || 5), 0) / sessions.length;
-
-    const streak = calculateStreak().current;
-    const streakBonus = Math.min(20, streak * 5);
-    const focusScore = (avgFocus / 5.0) * 40;
-    const goalScore = goalRatio * 40;
-
-    const efficiency = Math.round(streakBonus + focusScore + goalScore);
-    return {
-      score: Math.min(100, Math.max(0, efficiency)),
-      avgFocus: Math.round(avgFocus * 10) / 10
-    };
+    const tasks = store.tasks || [];
+    if (!tasks.length) return { score: 0 };
+    const completedTasks = tasks.filter(task => task.status === 'Completed').length;
+    return { score: Math.round((completedTasks / tasks.length) * 100) };
   }
 
   // ================= Smart Coaching Tips =================
@@ -704,10 +703,6 @@
     subSelect.onchange = updateTasksForSubject;
     updateTasksForSubject();
 
-    const endTimeInput = document.getElementById('manualEndTimeInput');
-    const endTime = new Date();
-    endTimeInput.value = getLocalDateTimeValue(endTime);
-    document.getElementById('manualStartTimeInput').value = getLocalDateTimeValue(new Date(endTime.getTime() - 60 * 60000));
   }
 
   function updateTimerDisplay() {
@@ -810,6 +805,7 @@
       task_id: taskId,
       duration_minutes: minutesStudied,
       date: getTodayDate(),
+      subject_completion_percent: getSubjectCompletionPercent(subject),
       focus_score: selectedFocusRating,
       type: timerMode,
       notes: `Focus session via StudyFlow timer`
@@ -986,18 +982,11 @@
     }).join('');
 
     const dailyEfficiencyContainer = document.getElementById('dailySubjectEfficiency');
-    const todayDate = getTodayDate();
     const dailyEfficiencyRows = (store.subjects || []).map(subject => {
-      const sessionsToday = (store.sessions || []).filter(session => session.date === todayDate && session.subject === subject.name);
-      const hoursToday = sessionsToday.reduce((total, session) => total + (Number(session.duration_minutes) || 0) / 60, 0);
-      const averageFocus = sessionsToday.length
-        ? sessionsToday.reduce((total, session) => total + (Number(session.focus_score) || 0), 0) / sessionsToday.length
-        : 0;
-      const dailyTarget = (Number(subject.target_weekly_hours) || 0) / 7;
-      const targetProgress = dailyTarget > 0 ? Math.min(100, (hoursToday / dailyTarget) * 100) : 0;
-      const focusPercent = sessionsToday.length ? (averageFocus / 5) * 100 : 0;
-      const efficiency = sessionsToday.length ? Math.round((targetProgress + focusPercent) / 2) : 0;
-      return `<div class="daily-efficiency-bar-column" title="${escapeHtml(subject.name)}: ${efficiency}% efficiency · ${hoursToday.toFixed(1)}h studied · Focus ${sessionsToday.length ? averageFocus.toFixed(1) : '—'}/5" aria-label="${escapeHtml(subject.name)}, ${efficiency}% efficiency">
+      const subjectTasks = (store.tasks || []).filter(task => task.subject === subject.name);
+      const completedTasks = subjectTasks.filter(task => task.status === 'Completed').length;
+      const efficiency = subjectTasks.length ? Math.round((completedTasks / subjectTasks.length) * 100) : 0;
+      return `<div class="daily-efficiency-bar-column" title="${escapeHtml(subject.name)}: ${completedTasks} of ${subjectTasks.length} tasks completed · ${efficiency}%" aria-label="${escapeHtml(subject.name)}, ${efficiency}% task completion">
         <span class="daily-efficiency-value">${efficiency}%</span>
         <div class="daily-efficiency-bar-stage"><div class="daily-efficiency-bar" style="height:${Math.max(efficiency, 2)}%;background:${subject.color || 'var(--primary)'}"></div></div>
         <span class="daily-efficiency-subject">${escapeHtml(subject.name)}</span>
@@ -1587,11 +1576,26 @@
     document.getElementById('quickLogForm').addEventListener('submit', (e) => {
       e.preventDefault();
       const sub = document.getElementById('manualSubSelect').value;
-      const startedAt = new Date(document.getElementById('manualStartTimeInput').value);
-      const endedAt = new Date(document.getElementById('manualEndTimeInput').value);
+      const startValue = document.getElementById('manualStartTimeInput').value;
+      const endValue = document.getElementById('manualEndTimeInput').value;
+      if (!startValue || !endValue) {
+        alert('Enter both the start and end times for the offline study session.');
+        return;
+      }
+      const startedAt = new Date(startValue);
+      const endedAt = new Date(endValue);
       const mins = Math.round((endedAt.getTime() - startedAt.getTime()) / 60000);
-      if (!Number.isFinite(mins) || mins <= 0) {
+      if (!Number.isFinite(startedAt.getTime()) || !Number.isFinite(endedAt.getTime()) || !Number.isFinite(mins) || mins <= 0) {
         alert('Log out time must be later than log in time.');
+        return;
+      }
+      if (mins < 60) {
+        alert('Offline sessions can be logged after at least 1 hour of study.');
+        return;
+      }
+      const subjectCompletion = getSubjectCompletionPercent(sub);
+      if (subjectCompletion < 2) {
+        alert('Complete at least 2% of this subject’s tasks before logging offline study time.');
         return;
       }
       const notes = document.getElementById('manualNotesInput').value.trim();
@@ -1602,6 +1606,7 @@
         task_id: null,
         duration_minutes: mins,
         date: getLocalDateValue(startedAt),
+        subject_completion_percent: subjectCompletion,
         started_at: startedAt.toISOString(),
         ended_at: endedAt.toISOString(),
         focus_score: 4,
@@ -1614,6 +1619,8 @@
       saveData();
       renderAll();
 
+      document.getElementById('manualStartTimeInput').value = '';
+      document.getElementById('manualEndTimeInput').value = '';
       document.getElementById('manualNotesInput').value = '';
       alert(`✓ Recorded ${(mins / 60).toFixed(1)} hours for ${sub}!`);
     });

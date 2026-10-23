@@ -93,7 +93,7 @@
           <span class="pill-label">Today:</span>
           <span class="pill-value" id="headerTodayHours">0.0h / 3.0h</span>
         </div>
-        <div class="metric-pill" title="Time efficiency & focus rating score">
+        <div class="metric-pill" title="Completed tasks divided by all tasks">
           <span class="pill-icon">🎯</span>
           <span class="pill-label">Efficiency:</span>
           <span class="pill-value" id="headerEfficiency">100/100</span>
@@ -180,11 +180,11 @@
             <div class="stat-progress stat-progress-glass">
               <div class="progress-bar bar-glass-white" id="dashEffBar" style="width: 100%"></div>
             </div>
-            <div class="stat-subtext stat-subtext-light" id="dashFocusAvg">Avg Focus: 5.0 ⭐ (Peak Focus)</div>
+            <div class="stat-subtext stat-subtext-light" id="dashFocusAvg">Efficiency is based on completed tasks</div>
             <button class="efficiency-chart-toggle" id="toggleEfficiencyChartBtn" type="button" aria-expanded="false" aria-controls="efficiencyChartDetails">Show subject charts</button>
             <div class="efficiency-chart-details hidden" id="efficiencyChartDetails">
               <div class="efficiency-chart-heading">Daily Subject Efficiency</div>
-              <p class="efficiency-chart-note">Daily goal progress + focus rating</p>
+              <p class="efficiency-chart-note">Completed tasks divided by all tasks for each subject</p>
               <div id="dailySubjectEfficiency" class="daily-subject-efficiency"></div>
             </div>
           </div>
@@ -745,7 +745,7 @@
         <div class="attendance-calendar" id="attendanceCalendar"></div>
         <p class="card-description" id="attendanceStatus"></p>
         <div class="attendance-threshold" id="attendanceThreshold">Study 1 hour to mark attendance</div>
-        <p class="card-description attendance-note">Attendance is counted after at least 60 minutes in a saved focus timer session. Manual offline logs do not count.</p>
+          <p class="card-description attendance-note">Attendance requires at least 60 saved study minutes and at least 2% task completion in the session’s subject. Eligible offline logs count.</p>
       </div>
     </section>
   </div>
