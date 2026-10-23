@@ -463,6 +463,14 @@ body {
   box-shadow: var(--shadow-sm);
 }
 
+.portal-dashboard-card {
+  max-width: 760px;
+  margin: 2rem auto;
+  padding: clamp(1.5rem, 4vw, 2.5rem);
+}
+.portal-dashboard-actions { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-top: 1.25rem; }
+.portal-sync-note { margin: 1rem 0 0; color: var(--text-muted); font-size: 0.875rem; line-height: 1.55; }
+
 .content-card.full-width {
   grid-column: 1 / -1;
 }

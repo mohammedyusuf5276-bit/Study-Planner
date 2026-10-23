@@ -142,6 +142,24 @@
       
       <!-- ================= 1. DASHBOARD VIEW ================= -->
       <section id="tab-dashboard" class="tab-panel active">
+        <div class="content-card portal-dashboard-card">
+          <div class="card-header">
+            <div class="card-title">
+              <span class="title-icon">🎓</span>
+              <h3>College Portal</h3>
+            </div>
+          </div>
+          <p class="card-description">Connect your college portal and sign in to view your coursework. Import assignment deadlines from a calendar or CSV export when your portal provides one.</p>
+          <div class="portal-dashboard-actions">
+            <button class="btn btn-primary" id="connectLmsBtn" type="button">Connect College Portal</button>
+            <a id="dashboardPortalSignIn" class="btn btn-outline hidden" href="#" target="_blank" rel="noopener noreferrer">Sign in to College Portal</a>
+            <button class="btn btn-outline hidden" id="importLmsDeadlinesBtn" type="button" title="Import a calendar (.ics) or assignment CSV export">Import Assignment Deadlines</button>
+            <input id="lmsDeadlineFile" type="file" accept=".ics,.csv,text/calendar,text/csv" hidden>
+          </div>
+          <p class="portal-sync-note">Automatic syncing is not enabled yet. StudyFlow currently imports portal calendar or CSV exports and never asks for your college password.</p>
+        </div>
+
+        <div class="hidden" aria-hidden="true">
         <!-- Top Stats Row -->
         <div class="stats-grid">
           <!-- Card 1: Today's Study -->
@@ -249,6 +267,7 @@
               <!-- Dynamically populated -->
             </div>
           </div>
+        </div>
         </div>
       </section>
 
@@ -619,7 +638,7 @@
             <label for="lmsPortalUrl">Your college portal URL</label>
             <input id="lmsPortalUrl" class="form-input" type="url" placeholder="https://lms.yourcollege.edu" required>
           </div>
-          <p class="card-description">StudyFlow saves the portal link on this device. Sign in on your college portal, export assignments as .ics or .csv, then import them into StudyFlow. Your portal password is never requested here.</p>
+          <p class="card-description">Save your portal address, then open it and sign in there. StudyFlow does not collect or store your college password. Automatic assignment syncing requires an authorized integration from your college portal.</p>
           <a id="openLmsPortalLink" class="btn btn-sm btn-outline hidden" href="#" target="_blank" rel="noopener noreferrer">Open Saved Portal</a>
         </div>
         <div class="modal-footer">

@@ -1426,6 +1426,15 @@
     const lmsPlatform = document.getElementById('lmsPlatform');
     const lmsPortalUrl = document.getElementById('lmsPortalUrl');
     const openPortalLink = document.getElementById('openLmsPortalLink');
+    const dashboardPortalSignIn = document.getElementById('dashboardPortalSignIn');
+    const importPortalDeadlines = document.getElementById('importLmsDeadlinesBtn');
+    const updatePortalActions = () => {
+      const portalUrl = store.lms_connection?.url;
+      dashboardPortalSignIn.classList.toggle('hidden', !portalUrl);
+      importPortalDeadlines.classList.toggle('hidden', !portalUrl);
+      if (portalUrl) dashboardPortalSignIn.href = portalUrl;
+    };
+    updatePortalActions();
     const showLmsModal = () => {
       lmsPlatform.value = store.lms_connection?.platform || 'Polaris LMS';
       lmsPortalUrl.value = store.lms_connection?.url || '';
@@ -1445,8 +1454,9 @@
       if (!['https:', 'http:'].includes(url.protocol)) { alert('Use a portal URL that starts with http:// or https://.'); return; }
       store.lms_connection = { platform: lmsPlatform.value, url: url.href };
       await saveData();
+      updatePortalActions();
       hideLmsModal();
-      alert(`${store.lms_connection.platform} portal saved. Sign in there and import an .ics or .csv assignment export.`);
+      alert(`${store.lms_connection.platform} portal saved. Sign in using the button on your dashboard. Import assignment deadlines from a portal calendar or CSV export when available.`);
     });
     const lmsFileInput = document.getElementById('lmsDeadlineFile');
     document.getElementById('importLmsDeadlinesBtn').addEventListener('click', () => lmsFileInput.click());
