@@ -2568,3 +2568,207 @@ button:focus:not(:focus-visible), input:focus:not(:focus-visible), select:focus:
 [data-theme="dark"] #tab-dashboard #cardWeekTarget { background-image: radial-gradient(ellipse at 100% 0%, rgb(155 112 239 / .18), transparent 55%), radial-gradient(ellipse at 0% 100%, rgb(104 158 255 / .10), transparent 48%) !important; }
 [data-theme="dark"] #tab-dashboard #cardEfficiency { background-image: radial-gradient(ellipse at 100% 0%, rgb(79 190 151 / .17), transparent 55%), radial-gradient(ellipse at 0% 100%, rgb(113 158 245 / .10), transparent 48%) !important; }
 [data-theme="dark"] #tab-dashboard #streakAttendanceCard { background-image: radial-gradient(ellipse at 100% 0%, rgb(244 157 106 / .18), transparent 55%), radial-gradient(ellipse at 0% 100%, rgb(240 204 115 / .10), transparent 48%) !important; }
+/* Study Material: clearer create, browse, and notes sections. */
+#tab-materials > .content-card {
+  padding: clamp(1.15rem, 2.6vw, 2rem);
+  background-image: radial-gradient(ellipse at 100% 0%, rgb(93 112 214 / .06), transparent 36%);
+}
+#tab-materials > .content-card > .card-header { margin-bottom: .25rem; }
+#tab-materials > .content-card > .card-header .card-title h3,
+#tab-materials .study-notes-section .card-title h3 { font-size: 1.2rem; letter-spacing: -.025em; }
+#tab-materials .card-description { max-width: 58ch; line-height: 1.65; }
+#tab-materials .material-form {
+  margin: 1.35rem 0 1rem; padding: 1.2rem; gap: 0 .9rem;
+  border: 1px solid var(--border-color); border-radius: 14px;
+  background: var(--bg-subtle); align-items: end;
+}
+#tab-materials .material-form .form-group { margin-bottom: .85rem; }
+#tab-materials .material-form button { min-height: 42px; margin-bottom: .85rem; }
+#tab-materials .materials-list { gap: .7rem; }
+#tab-materials .material-item, #tab-materials .study-note-item {
+  padding: 1rem 1.1rem; border-color: var(--border-light); border-radius: 12px;
+  box-shadow: 0 1px 2px rgb(20 31 54 / .025);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast), transform var(--transition-fast);
+}
+#tab-materials .material-item:hover, #tab-materials .study-note-item:hover {
+  border-color: color-mix(in srgb, var(--primary) 35%, var(--border-color));
+  box-shadow: var(--shadow-sm); transform: translateY(-1px);
+}
+#tab-materials .material-item h4, #tab-materials .study-note-content h4 { font-size: .96rem; letter-spacing: -.01em; }
+#tab-materials .material-item p { line-height: 1.55; }
+#tab-materials .material-actions { align-items: center; }
+#tab-materials .study-notes-section { margin-top: 1.75rem; padding: 1.5rem 0 0; border-top: 1px solid var(--border-color); }
+#tab-materials .study-notes-section > .card-header { margin-bottom: .4rem; }
+#tab-materials .notes-filter { max-width: 420px; margin-top: 1rem; }
+#tab-materials .study-note-form {
+  margin-top: 1rem; padding: 1.2rem; gap: 0 1rem;
+  border: 1px solid var(--border-color); border-radius: 14px; background: var(--bg-subtle);
+}
+#tab-materials .study-note-form .form-group { margin-bottom: .9rem; }
+#tab-materials .study-note-form .form-textarea { min-height: 150px; line-height: 1.65; }
+#tab-materials .note-form-actions { align-items: center; margin: 0; }
+#tab-materials .study-notes-list { margin-top: 1rem; }
+#tab-materials .study-note-meta { color: var(--text-muted); font-size: .8rem; }
+
+/* Study Timer: a calm, legible focus workspace. */
+#tab-timer .timer-layout { align-items: start; gap: 1.1rem; }
+#tab-timer .timer-main-card {
+  position: relative; overflow: hidden; background-color: var(--bg-surface);
+  background-image: radial-gradient(ellipse at 50% 0%, rgb(91 113 226 / .13), transparent 48%), radial-gradient(ellipse at 100% 100%, rgb(91 197 176 / .08), transparent 40%);
+  border-radius: 20px; padding: clamp(1.2rem, 3vw, 2.5rem);
+}
+#tab-timer .timer-modes {
+  max-width: 640px; padding: .3rem; margin-bottom: 1.6rem;
+  border: 1px solid var(--border-color); border-radius: 13px; background: var(--bg-subtle); gap: .35rem;
+}
+#tab-timer .timer-mode-btn { border-color: transparent; background: transparent; border-radius: 9px; padding: .55rem .75rem; font-size: .8rem; }
+#tab-timer .timer-mode-btn:hover { background: var(--bg-secondary); }
+#tab-timer .timer-mode-btn.active { background: var(--bg-surface); border-color: var(--border-color); color: var(--primary); box-shadow: 0 1px 3px rgb(20 31 54 / .08); }
+#tab-timer .timer-context-bar { max-width: 600px; gap: .8rem; margin-bottom: 1.6rem; }
+#tab-timer .context-field label { margin-bottom: .4rem; font-size: .76rem; letter-spacing: .015em; }
+#tab-timer .timer-display-wrapper {
+  width: min(100%, 600px); margin: .3rem 0 1.4rem; padding: 1.5rem 1rem;
+  border: 1px solid color-mix(in srgb, var(--primary) 12%, var(--border-color)); border-radius: 18px;
+  background: color-mix(in srgb, var(--bg-surface) 76%, var(--primary-subtle));
+}
+#tab-timer .timer-clock { font-size: clamp(4rem, 10vw, 6rem); letter-spacing: -.065em; }
+#tab-timer .timer-state-label { max-width: 38ch; margin-inline: auto; line-height: 1.5; }
+#tab-timer .timer-controls { gap: .55rem; margin-bottom: 1.4rem; }
+#tab-timer .timer-controls .btn { min-width: 112px; }
+#tab-timer .timer-controls .btn-icon { width: auto; height: auto; padding: 0; border: 0; background: transparent; color: inherit; }
+#tab-timer .focus-rating-box {
+  min-width: min(100%, 270px); padding: .8rem 1.1rem; gap: .3rem;
+  border: 1px solid var(--border-color); border-radius: 13px;
+  background: color-mix(in srgb, var(--bg-surface) 82%, var(--bg-secondary));
+}
+#tab-timer .focus-rating-box label { font-size: .77rem; }
+#tab-timer .star-rating { font-size: 1.35rem; }
+#tab-timer .rating-text { font-size: .76rem; }
+#tab-timer .timer-sidebar { display: grid; gap: 1rem; }
+#tab-timer .timer-sidebar > .content-card { padding: 1.2rem; }
+#tab-timer .timer-sidebar .card-header { align-items: flex-start; }
+#tab-timer .timer-sidebar .card-title h3 { font-size: 1rem; }
+#tab-timer .quick-log-form { padding-top: .15rem; }
+#tab-timer .quick-log-form .form-row { gap: .7rem; }
+#tab-timer .offline-log-history { margin-top: 1.35rem; padding-top: 1.1rem; border-top: 1px solid var(--border-color); }
+#tab-timer .offline-log-history h4 { margin-bottom: .7rem; font-size: .88rem; }
+#tab-timer .offline-log-history .tasks-table-card { border-radius: 10px; }
+#tab-timer .offline-log-history .tasks-table th, #tab-timer .offline-log-history .tasks-table td { padding: .65rem .7rem; }
+[data-theme="dark"] #tab-timer .timer-display-wrapper { background: color-mix(in srgb, var(--bg-surface) 75%, var(--primary-subtle)); }
+@media (max-width: 900px) { #tab-timer .timer-modes { max-width: 100%; } }
+@media (max-width: 640px) {
+  #tab-materials .material-form, #tab-materials .study-note-form { padding: .9rem; }
+  #tab-materials .material-form button { margin-bottom: .85rem; }
+  #tab-timer .timer-context-bar { flex-direction: column; gap: .75rem; }
+  #tab-timer .timer-modes { justify-content: flex-start; }
+  #tab-timer .timer-controls .btn { flex: 1 1 40%; min-width: 0; }
+  #tab-timer .timer-sidebar .form-row { grid-template-columns: 1fr; }
+}
+
+/* Short Suits quote accents for study motivation. */
+.page-quote {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin: .8rem 0 1.1rem;
+  padding: .8rem 1rem;
+  border-left: 3px solid var(--primary);
+  border-radius: 0 10px 10px 0;
+  background: linear-gradient(100deg, var(--primary-subtle), color-mix(in srgb, var(--bg-surface) 75%, transparent));
+}
+.page-quote p { color: var(--text-main); font-size: .91rem; font-weight: 650; letter-spacing: -.01em; }
+.page-quote cite, .timer-quote cite { color: var(--text-muted); font-size: .73rem; font-style: normal; white-space: nowrap; }
+.timer-quote {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: .55rem;
+  min-height: 2rem;
+  margin: .85rem auto 0;
+  color: var(--text-muted);
+}
+.timer-quote-mark { color: var(--primary); font-family: Georgia, serif; font-size: 2rem; line-height: .7; }
+.timer-quote > span:nth-child(2) { color: var(--text-main); font-size: .9rem; font-weight: 650; }
+.timer-quote cite { margin-left: .25rem; }
+@media (max-width: 560px) {
+  .page-quote { align-items: flex-start; flex-direction: column; gap: .2rem; }
+  .timer-quote { flex-wrap: wrap; gap: .35rem; }
+  .timer-quote cite { width: 100%; margin: 0; }
+}
+
+/* Motion and small line-art illustrations for Timer and Planner; no palette changes. */
+#tab-timer .timer-main-card { overflow: hidden; }
+#tab-timer .timer-main-card::after {
+  content: '';
+  position: absolute;
+  top: 7.5rem;
+  right: 1rem;
+  width: clamp(76px, 10vw, 118px);
+  aspect-ratio: 1;
+  opacity: .13;
+  pointer-events: none;
+  background-color: var(--text-muted);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'%3E%3Cpath d='M12 34c17-8 32-7 48 2v65c-16-9-31-10-48-2V34Zm96 0c-17-8-32-7-48 2v65c16-9 31-10 48-2V34ZM60 36v65' fill='none' stroke='black' stroke-width='5' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M23 49c9-3 17-3 25 0M23 61c9-3 17-3 25 0m24-12c8-3 16-3 25 0M72 61c8-3 16-3 25 0' fill='none' stroke='black' stroke-width='4' stroke-linecap='round'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'%3E%3Cpath d='M12 34c17-8 32-7 48 2v65c-16-9-31-10-48-2V34Zm96 0c-17-8-32-7-48 2v65c16-9 31-10 48-2V34ZM60 36v65' fill='none' stroke='black' stroke-width='5' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M23 49c9-3 17-3 25 0M23 61c9-3 17-3 25 0m24-12c8-3 16-3 25 0M72 61c8-3 16-3 25 0' fill='none' stroke='black' stroke-width='4' stroke-linecap='round'/%3E%3C/svg%3E") center / contain no-repeat;
+  animation: studyflow-art-float 7s ease-in-out infinite;
+}
+#tab-timer .timer-main-card:has(#timerPauseBtn:not(:disabled)) .timer-clock {
+  animation: studyflow-clock-breathe 3.5s ease-in-out infinite;
+}
+#tab-timer .timer-quote { animation: studyflow-quote-in .5s ease both; }
+#tab-timer .timer-main-card:has(#timerPauseBtn:not(:disabled)) .timer-display-wrapper::before {
+  animation: studyflow-glow-drift 5s ease-in-out infinite alternate;
+}
+
+#tab-planner .planner-toolbar { position: relative; overflow: hidden; }
+#tab-planner .planner-toolbar::after {
+  content: '';
+  position: absolute;
+  z-index: 0;
+  top: -2.1rem;
+  right: 2.2rem;
+  width: 88px;
+  height: 88px;
+  opacity: .10;
+  pointer-events: none;
+  background-color: var(--text-muted);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect x='24' y='14' width='54' height='72' rx='8' fill='none' stroke='black' stroke-width='5'/%3E%3Cpath d='m36 37 5 5 9-10m-14 27 5 5 9-10m9-17h12m-12 27h12' fill='none' stroke='black' stroke-width='4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect x='24' y='14' width='54' height='72' rx='8' fill='none' stroke='black' stroke-width='5'/%3E%3Cpath d='m36 37 5 5 9-10m-14 27 5 5 9-10m9-17h12m-12 27h12' fill='none' stroke='black' stroke-width='4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat;
+  animation: studyflow-art-float 8s ease-in-out infinite reverse;
+}
+#tab-planner .toolbar-left, #tab-planner .toolbar-right { position: relative; z-index: 1; }
+#tab-planner .tasks-table tbody tr { animation: studyflow-row-arrive .35s ease both; }
+#tab-planner .tasks-table tbody tr:nth-child(2) { animation-delay: .035s; }
+#tab-planner .tasks-table tbody tr:nth-child(3) { animation-delay: .07s; }
+#tab-planner .tasks-table tbody tr:nth-child(4) { animation-delay: .105s; }
+#tab-planner .matrix-card { transition: transform .22s ease, box-shadow .22s ease; }
+#tab-planner .matrix-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); }
+
+@keyframes studyflow-art-float {
+  0%, 100% { transform: translateY(0) rotate(-2deg); }
+  50% { transform: translateY(7px) rotate(1deg); }
+}
+@keyframes studyflow-clock-breathe {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.025); }
+}
+@keyframes studyflow-glow-drift {
+  from { transform: translateX(-18px); opacity: .72; }
+  to { transform: translateX(18px); opacity: 1; }
+}
+@keyframes studyflow-quote-in {
+  from { opacity: .55; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes studyflow-row-arrive {
+  from { opacity: .75; transform: translateY(3px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  #tab-timer *, #tab-planner * { animation: none !important; transition: none !important; }
+}
+@media (max-width: 700px) {
+  #tab-timer .timer-main-card::after { top: 5.4rem; right: .4rem; width: 62px; opacity: .08; }
+  #tab-planner .planner-toolbar::after { right: .5rem; width: 64px; height: 64px; opacity: .06; }
+}

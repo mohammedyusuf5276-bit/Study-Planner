@@ -735,6 +735,14 @@
       const secs = timerSecondsLeft % 60;
       clock.textContent = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
     }
+
+    const quoteText = document.getElementById('timerQuoteText');
+    const quoteAttribution = document.getElementById('timerQuoteAttribution');
+    if (quoteText && quoteAttribution) {
+      const reachedHour = timerStudiedSeconds >= 3600;
+      quoteText.textContent = reachedHour ? 'I like this.' : 'Life is like this.';
+      quoteAttribution.innerHTML = `Harvey Specter \u00B7 <em>Suits</em> \u00B7 ${reachedHour ? '60 min' : '0 min'}`;
+    }
   }
 
   function startTimer() {

@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>StudyFlow - Smart Study Planner & Time Management</title>
-  <link rel="stylesheet" href="styles.css?v=polish-2">
+  <link rel="stylesheet" href="styles.css?v=polish-7">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
@@ -142,6 +142,7 @@
       
       <!-- ================= 1. DASHBOARD VIEW ================= -->
       <section id="tab-dashboard" class="tab-panel active">
+        <blockquote class="page-quote page-quote-dashboard"><p>You just got Litt.</p><cite>Harvey Specter &#183; <em>Suits</em></cite></blockquote>
         <!-- Top Stats Row -->
         <div class="stats-grid">
           <!-- Card 1: Today's Study -->
@@ -259,6 +260,7 @@
             <div class="card-title"><span class="title-icon">📚</span><h3>Study Material Library</h3></div>
           </div>
           <p class="card-description">Keep useful links and notes organized by subject.</p>
+          <blockquote class="page-quote material-quote"><p>&#8220;I don&#8217;t have dreams, I have goals.&#8221;</p><cite>Harvey Specter &#183; <em>Suits</em></cite></blockquote>
           <form id="materialForm" class="material-form">
             <div class="form-group"><label for="materialTitle">Title</label><input id="materialTitle" class="form-input" required maxlength="120" placeholder="e.g. Introduction to React"></div>
             <div class="form-group"><label for="materialSubject">Subject</label><select id="materialSubject" class="form-select" required></select></div>
@@ -285,6 +287,7 @@
 
       <!-- ================= 2. STUDY PLANNER & TASKS ================= -->
       <section id="tab-planner" class="tab-panel">
+        <blockquote class="page-quote page-quote-planner"><p>Make the next move count.</p><cite>StudyFlow</cite></blockquote>
         <div class="planner-toolbar">
           <div class="toolbar-left">
             <div class="search-box">
@@ -432,6 +435,7 @@
             <div class="timer-display-wrapper">
               <div class="timer-clock" id="timerClock">25:00</div>
               <div class="timer-state-label" id="timerStatusLabel">Ready to begin. Put away distractions!</div>
+              <div class="timer-quote" id="timerQuote" role="status" aria-live="polite"><span class="timer-quote-mark" aria-hidden="true">&#8220;</span><span id="timerQuoteText">Life is like this.</span><cite id="timerQuoteAttribution">Harvey Specter &#183; <em>Suits</em> &#183; 0 min</cite></div>
             </div>
 
             <!-- Controls -->
@@ -500,6 +504,7 @@
 
       <!-- ================= 4. TIME ANALYTICS & INSIGHTS ================= -->
       <section id="tab-admin" class="tab-panel">
+        <blockquote class="page-quote page-quote-admin"><p>Lead with clarity. Deliver with confidence.</p><cite>StudyFlow</cite></blockquote>
         <div class="content-card">
           <div class="card-header">
             <div class="card-title"><h3>Account management</h3></div>
@@ -524,6 +529,7 @@
       </section>
 
       <section id="tab-analytics" class="tab-panel">
+        <blockquote class="page-quote page-quote-analytics"><p>Small improvements add up to real progress.</p><cite>StudyFlow</cite></blockquote>
         <div class="analytics-layout">
           <!-- 7-Day Visual Study Chart -->
           <div class="content-card">
