@@ -25,6 +25,8 @@ module.exports = async function handler(req, res) {
       const users = rows.map(({ study_data, ...user }) => {
         const sessions = Array.isArray(study_data?.sessions) ? study_data.sessions : [];
         const totalMinutes = sessions.reduce((total, session) => {
+          const seconds = Number(session?.duration_seconds);
+          if (Number.isFinite(seconds) && seconds > 0) return total + seconds / 60;
           const minutes = Number(session?.duration_minutes);
           return Number.isFinite(minutes) && minutes > 0 ? total + minutes : total;
         }, 0);

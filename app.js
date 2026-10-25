@@ -45,6 +45,8 @@
   let timerStudiedSeconds = 0;
   let timerSessionStarted = false;
   let tabSwitchCount = 0;
+  let timerLastTickAt = null;
+  let timerFractionalMs = 0;
 
   // View States
   let activeTab = 'tab-dashboard';
@@ -86,6 +88,22 @@
   }
 
   const attendanceSessionTypes = new Set(['focus-60', 'focus-90', 'focus-120', 'stopwatch', 'pomodoro', 'deep', 'manual']);
+  const minimumAttendanceSeconds = 60 * 60;
+
+  function getSessionDurationSeconds(session) {
+    const seconds = Number(session.duration_seconds);
+    if (Number.isFinite(seconds) && seconds >= 0) return Math.floor(seconds);
+    const minutes = Number(session.duration_minutes);
+    return Number.isFinite(minutes) && minutes >= 0 ? Math.round(minutes * 60) : 0;
+  }
+
+  function formatStudyDuration(totalSeconds) {
+    const seconds = Math.max(0, Math.floor(Number(totalSeconds) || 0));
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const remainder = seconds % 60;
+    return hours + 'h ' + minutes + 'm ' + remainder + 's';
+  }
 
   function getSubjectCompletionPercent(subjectName) {
     const tasks = (store.tasks || []).filter(task => task.subject === subjectName);
@@ -104,18 +122,18 @@
 
   function getQualifiedAttendanceMinutes(date) {
     return (store.sessions || []).reduce((total, session) => {
-      const minutes = Number(session.duration_minutes) || 0;
-      return session.date === date && qualifiesForAttendance(session) && minutes >= 60 ? total + minutes : total;
+      const seconds = getSessionDurationSeconds(session);
+      return session.date === date && qualifiesForAttendance(session) && seconds >= minimumAttendanceSeconds ? total + seconds / 60 : total;
     }, 0);
   }
 
   function getAttendanceDates() {
     const minutesByDate = new Map();
     (store.sessions || []).forEach(session => {
-      const minutes = Number(session.duration_minutes) || 0;
-      if (qualifiesForAttendance(session) && session.date && minutes >= 60) minutesByDate.set(session.date, (minutesByDate.get(session.date) || 0) + minutes);
+      const seconds = getSessionDurationSeconds(session);
+      if (qualifiesForAttendance(session) && session.date && seconds >= minimumAttendanceSeconds) minutesByDate.set(session.date, (minutesByDate.get(session.date) || 0) + seconds);
     });
-    return new Set([...minutesByDate.entries()].filter(([, minutes]) => minutes >= 60).map(([date]) => date));
+    return new Set([...minutesByDate.entries()].filter(([, seconds]) => seconds >= minimumAttendanceSeconds).map(([date]) => date));
   }
 
   function generateId(prefix = 'id') {
@@ -296,7 +314,7 @@
   function calculateHoursToday() {
     const today = getTodayDate();
     const todaySessions = (store.sessions || []).filter(s => s.date === today);
-    const mins = todaySessions.reduce((acc, cur) => acc + (Number(cur.duration_minutes) || 0), 0);
+    const mins = todaySessions.reduce((acc, cur) => acc + getSessionDurationSeconds(cur) / 60, 0);
     return Math.round((mins / 60) * 10) / 10;
   }
 
@@ -313,7 +331,7 @@
       return sDate >= monday;
     });
 
-    const mins = weekSessions.reduce((acc, cur) => acc + (Number(cur.duration_minutes) || 0), 0);
+    const mins = weekSessions.reduce((acc, cur) => acc + getSessionDurationSeconds(cur) / 60, 0);
     return Math.round((mins / 60) * 10) / 10;
   }
 
@@ -393,7 +411,7 @@
     (store.subjects || []).forEach(s => { subTotals[s.name] = 0; });
     (store.sessions || []).forEach(s => {
       if (subTotals[s.subject] !== undefined) {
-        subTotals[s.subject] += (Number(s.duration_minutes) || 0) / 60;
+        subTotals[s.subject] += getSessionDurationSeconds(s) / 3600;
       }
     });
 
@@ -730,34 +748,42 @@
 
     const subject = document.getElementById('timerSubjectSelect').value;
     document.getElementById('timerStatusLabel').textContent = `Focus sprint active for ${subject}... Minimize all tabs!`;
+    timerLastTickAt = performance.now();
 
     timerInterval = setInterval(() => {
-      if (timerMode === 'stopwatch' || ((timerMode !== 'short-break' && timerMode !== 'long-break') && timerSecondsLeft > 0)) {
-        timerStudiedSeconds++;
-      }
-      if (timerMode === 'stopwatch') {
-        stopwatchSeconds++;
-        updateTimerDisplay();
-      } else {
-        if (timerSecondsLeft > 0) {
-          timerSecondsLeft--;
-          updateTimerDisplay();
-        } else {
+      accrueTimerTime();
+      if (timerMode !== 'stopwatch' && timerSecondsLeft <= 0) {
           // Timer reached 00:00
           pauseTimer();
           if (localStorage.getItem('studyflow_completion_sound') !== 'false') playCompletionChime();
           document.getElementById('timerStatusLabel').textContent = `🔔 Time's up! Exceptional focus sprint!`;
           alert('🔔 Focus session complete! Take a well-deserved hydration break.');
           finishTimerSession();
-        }
       }
     }, 1000);
   }
 
+  function accrueTimerTime(now = performance.now()) {
+    if (timerLastTickAt === null) return;
+    timerFractionalMs += Math.max(0, now - timerLastTickAt);
+    timerLastTickAt = now;
+    const elapsedSeconds = Math.floor(timerFractionalMs / 1000);
+    if (!elapsedSeconds) return;
+    timerFractionalMs -= elapsedSeconds * 1000;
+
+    const isBreak = timerMode === 'short-break' || timerMode === 'long-break';
+    if (!isBreak) timerStudiedSeconds += elapsedSeconds;
+    if (timerMode === 'stopwatch') stopwatchSeconds += elapsedSeconds;
+    else timerSecondsLeft = Math.max(0, timerSecondsLeft - elapsedSeconds);
+    updateTimerDisplay();
+  }
+
   function pauseTimer() {
     if (!timerRunning) return;
+    accrueTimerTime();
     timerRunning = false;
     clearInterval(timerInterval);
+    timerLastTickAt = null;
     document.getElementById('timerStartBtn').disabled = false;
     document.getElementById('timerStartBtnText').textContent = 'Resume Focus';
     document.getElementById('timerPauseBtn').disabled = true;
@@ -769,6 +795,8 @@
     timerStudiedSeconds = 0;
     timerSessionStarted = false;
     tabSwitchCount = 0;
+    timerLastTickAt = null;
+    timerFractionalMs = 0;
     document.getElementById('timerStartBtnText').textContent = 'Start Focus';
     document.getElementById('timerCompleteBtn').disabled = true;
 
@@ -785,27 +813,34 @@
   function finishTimerSession() {
     pauseTimer();
 
-    const minutesStudied = Math.round((timerStudiedSeconds / 60) * 100) / 100;
-    if (minutesStudied <= 0) {
+    const secondsStudied = timerStudiedSeconds;
+    const minutesStudied = secondsStudied / 60;
+    if (secondsStudied <= 0) {
       document.getElementById('timerStatusLabel').textContent = 'No active study time to save yet.';
       return;
     }
-    if (timerMode !== 'short-break' && timerMode !== 'long-break' && timerStudiedSeconds < 60 * 60) {
+    if (timerMode !== 'short-break' && timerMode !== 'long-break' && secondsStudied < minimumAttendanceSeconds) {
       document.getElementById('timerStatusLabel').textContent = 'Study for at least 60 active minutes before saving this focus session.';
       return;
     }
 
     const subject = document.getElementById('timerSubjectSelect').value;
     const taskId = document.getElementById('timerTaskSelect').value || null;
+    const subjectCompletion = getSubjectCompletionPercent(subject);
+    if (subjectCompletion < 2) {
+      document.getElementById('timerStatusLabel').textContent = 'Complete at least 2% of ' + subject + "'s tasks before logging this session. Your study time is still here; finish a task and save again.";
+      return;
+    }
 
     // Create session record
     const newSession = {
       id: generateId('s'),
       subject,
       task_id: taskId,
+      duration_seconds: secondsStudied,
       duration_minutes: minutesStudied,
       date: getTodayDate(),
-      subject_completion_percent: getSubjectCompletionPercent(subject),
+      subject_completion_percent: subjectCompletion,
       focus_score: selectedFocusRating,
       type: timerMode,
       notes: `Focus session via StudyFlow timer`
@@ -818,7 +853,7 @@
     if (taskId) {
       const task = (store.tasks || []).find(t => t.id === taskId);
       if (task) {
-        task.actual_hours = Math.round((task.actual_hours + (minutesStudied / 60)) * 10) / 10;
+        task.actual_hours = (Number(task.actual_hours) || 0) + (secondsStudied / 3600);
         if (task.status === 'Pending') task.status = 'In Progress';
       }
     }
@@ -911,7 +946,7 @@
     tbody.innerHTML = logs.map(session => {
       const start = session.started_at ? new Date(session.started_at).toLocaleString() : 'Time not recorded';
       const end = session.ended_at ? new Date(session.ended_at).toLocaleString() : 'Time not recorded';
-      return `<tr><td>${escapeHtml(session.subject)}</td><td>${escapeHtml(start)}</td><td>${escapeHtml(end)}</td><td>${(Number(session.duration_minutes || 0) / 60).toFixed(2)} hrs</td></tr>`;
+      return `<tr><td>${escapeHtml(session.subject)}</td><td>${escapeHtml(start)}</td><td>${escapeHtml(end)}</td><td>${formatStudyDuration(getSessionDurationSeconds(session))}</td></tr>`;
     }).join('');
   }
 
@@ -932,7 +967,7 @@
 
       const dayMins = (store.sessions || [])
         .filter(s => s.date === dateStr)
-        .reduce((acc, cur) => acc + (Number(cur.duration_minutes) || 0), 0);
+        .reduce((acc, cur) => acc + getSessionDurationSeconds(cur) / 60, 0);
 
       const hours = Math.round((dayMins / 60) * 10) / 10;
       totalWeekSum += hours;
@@ -960,7 +995,7 @@
     (store.subjects || []).forEach(s => { subHours[s.name] = 0; });
     (store.sessions || []).forEach(s => {
       if (subHours[s.subject] !== undefined) {
-        subHours[s.subject] += (Number(s.duration_minutes) || 0) / 60;
+        subHours[s.subject] += getSessionDurationSeconds(s) / 3600;
       }
     });
 
@@ -1005,13 +1040,13 @@
     } else {
       sessionsBody.innerHTML = recent.map(s => {
         const starIcons = '⭐'.repeat(s.focus_score || 5);
-        const hoursFormatted = (s.duration_minutes / 60).toFixed(1);
+        const seconds = getSessionDurationSeconds(s);
         return `
           <tr>
             <td><strong>${s.date}</strong></td>
             <td><span class="badge badge-count">${escapeHtml(s.subject)}</span></td>
             <td><span class="tag tag-accent">${s.type}</span></td>
-            <td>${hoursFormatted}h (${s.duration_minutes}m)</td>
+            <td>${formatStudyDuration(seconds)}</td>
             <td>${starIcons}</td>
             <td>${s.notes ? escapeHtml(s.notes) : '<em style="color: var(--text-muted)">—</em>'}</td>
           </tr>
@@ -1584,12 +1619,13 @@
       }
       const startedAt = new Date(startValue);
       const endedAt = new Date(endValue);
-      const mins = Math.round((endedAt.getTime() - startedAt.getTime()) / 60000);
-      if (!Number.isFinite(startedAt.getTime()) || !Number.isFinite(endedAt.getTime()) || !Number.isFinite(mins) || mins <= 0) {
+      const seconds = Math.floor((endedAt.getTime() - startedAt.getTime()) / 1000);
+      const mins = seconds / 60;
+      if (!Number.isFinite(startedAt.getTime()) || !Number.isFinite(endedAt.getTime()) || !Number.isFinite(seconds) || seconds <= 0) {
         alert('Log out time must be later than log in time.');
         return;
       }
-      if (mins < 60) {
+      if (seconds < minimumAttendanceSeconds) {
         alert('Offline sessions can be logged after at least 1 hour of study.');
         return;
       }
@@ -1604,6 +1640,7 @@
         id: generateId('s_man'),
         subject: sub,
         task_id: null,
+        duration_seconds: seconds,
         duration_minutes: mins,
         date: getLocalDateValue(startedAt),
         subject_completion_percent: subjectCompletion,
