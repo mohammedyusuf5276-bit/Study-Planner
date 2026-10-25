@@ -2509,3 +2509,62 @@ button:focus:not(:focus-visible), input:focus:not(:focus-visible), select:focus:
   .main-content { padding-top: 1rem; }
   .timer-main-card { padding: 1.2rem .9rem; }
 }
+
+/* Soft aurora accents reserved for the four dashboard summary cards. */
+#tab-dashboard .stats-grid > .stat-card {
+  isolation: isolate;
+  background-color: var(--bg-surface) !important;
+  color: var(--text-main) !important;
+  border-color: var(--border-color) !important;
+}
+#tab-dashboard #cardTodayStudy {
+  background-image: radial-gradient(ellipse at 100% 0%, rgb(104 132 255 / .22), transparent 52%), radial-gradient(ellipse at 0% 100%, rgb(84 202 190 / .12), transparent 46%) !important;
+}
+#tab-dashboard #cardWeekTarget {
+  background-image: radial-gradient(ellipse at 100% 0%, rgb(155 112 239 / .20), transparent 52%), radial-gradient(ellipse at 0% 100%, rgb(104 158 255 / .12), transparent 46%) !important;
+}
+#tab-dashboard #cardEfficiency {
+  background-image: radial-gradient(ellipse at 100% 0%, rgb(79 190 151 / .20), transparent 52%), radial-gradient(ellipse at 0% 100%, rgb(113 158 245 / .12), transparent 46%) !important;
+}
+#tab-dashboard #streakAttendanceCard {
+  background-image: radial-gradient(ellipse at 100% 0%, rgb(244 157 106 / .22), transparent 52%), radial-gradient(ellipse at 0% 100%, rgb(240 204 115 / .14), transparent 46%) !important;
+}
+#tab-dashboard .stats-grid > .stat-card::before {
+  content: '';
+  display: block !important;
+  position: absolute;
+  z-index: -1;
+  width: 9rem;
+  height: 7rem;
+  top: -3.5rem;
+  right: -2rem;
+  border-radius: 50%;
+  background: radial-gradient(ellipse, rgb(130 151 255 / .20), transparent 70%);
+  filter: blur(14px);
+  pointer-events: none;
+}
+#tab-dashboard #cardWeekTarget::before { background: radial-gradient(ellipse, rgb(178 137 255 / .20), transparent 70%); }
+#tab-dashboard #cardEfficiency::before { background: radial-gradient(ellipse, rgb(99 203 163 / .20), transparent 70%); }
+#tab-dashboard #streakAttendanceCard::before { background: radial-gradient(ellipse, rgb(255 177 118 / .23), transparent 70%); }
+#tab-dashboard .stats-grid .stat-label-light,
+#tab-dashboard .stats-grid .stat-value-light,
+#tab-dashboard .stats-grid .stat-subtext-light,
+#tab-dashboard .stats-grid .stat-unit-light {
+  color: var(--text-main) !important;
+  text-shadow: none !important;
+}
+#tab-dashboard .stats-grid .stat-badge {
+  color: var(--text-muted) !important;
+  background: color-mix(in srgb, var(--bg-surface) 75%, transparent) !important;
+  border: 1px solid var(--border-color) !important;
+  box-shadow: none !important;
+}
+#tab-dashboard .stats-grid .stat-progress-glass { background: color-mix(in srgb, var(--text-main) 9%, transparent) !important; }
+#tab-dashboard .stats-grid .bar-glass-white { background: var(--primary) !important; box-shadow: none !important; }
+#tab-dashboard #cardEfficiency .bar-glass-white { background: var(--success) !important; }
+#tab-dashboard #streakAttendanceCard .bar-streak-active { background: #d88948 !important; box-shadow: none !important; }
+[data-theme="dark"] #tab-dashboard .stats-grid > .stat-card { border-color: var(--border-color) !important; }
+[data-theme="dark"] #tab-dashboard #cardTodayStudy { background-image: radial-gradient(ellipse at 100% 0%, rgb(104 132 255 / .19), transparent 55%), radial-gradient(ellipse at 0% 100%, rgb(84 202 190 / .10), transparent 48%) !important; }
+[data-theme="dark"] #tab-dashboard #cardWeekTarget { background-image: radial-gradient(ellipse at 100% 0%, rgb(155 112 239 / .18), transparent 55%), radial-gradient(ellipse at 0% 100%, rgb(104 158 255 / .10), transparent 48%) !important; }
+[data-theme="dark"] #tab-dashboard #cardEfficiency { background-image: radial-gradient(ellipse at 100% 0%, rgb(79 190 151 / .17), transparent 55%), radial-gradient(ellipse at 0% 100%, rgb(113 158 245 / .10), transparent 48%) !important; }
+[data-theme="dark"] #tab-dashboard #streakAttendanceCard { background-image: radial-gradient(ellipse at 100% 0%, rgb(244 157 106 / .18), transparent 55%), radial-gradient(ellipse at 0% 100%, rgb(240 204 115 / .10), transparent 48%) !important; }
