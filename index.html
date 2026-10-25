@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>StudyFlow - Smart Study Planner & Time Management</title>
-  <link rel="stylesheet" href="styles.css?v=polish-7">
+  <link rel="stylesheet" href="styles.css?v=polish-9">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
@@ -56,7 +56,7 @@
   <div class="app-layout">
     <!-- Opening Terms and Conditions Dialog -->
     <div id="welcomeBanner" class="welcome-banner terms-dialog" role="dialog" aria-modal="true" aria-labelledby="termsTitle">
-      <div class="welcome-content">
+      <div class="welcome-content"><p id="welcomeGreeting" class="welcome-greeting">Welcome to StudyFlow</p>
         <div class="welcome-badge">TERMS AND CONDITIONS</div>
         <div class="welcome-text">
           <h3 id="termsTitle">StudyFlow Terms and Conditions</h3>
@@ -142,7 +142,7 @@
       
       <!-- ================= 1. DASHBOARD VIEW ================= -->
       <section id="tab-dashboard" class="tab-panel active">
-        <blockquote class="page-quote page-quote-dashboard"><p>You just got Litt.</p><cite>Harvey Specter &#183; <em>Suits</em></cite></blockquote>
+        <blockquote class="page-quote page-quote-dashboard"><p>I don&#8217;t play the odds. I play the man.</p><cite>Harvey Specter &#183; <em>Suits</em></cite></blockquote>
         <!-- Top Stats Row -->
         <div class="stats-grid">
           <!-- Card 1: Today's Study -->
@@ -245,7 +245,7 @@
                 <button class="btn btn-sm btn-outline" id="jumpToPlannerBtn">View All</button>
               </div>
             </div>
-            <p class="card-description">Choose your college portal, then import its assignment calendar (.ics) or CSV export. Reimport an updated export to refresh deadlines.</p>
+            <p class="card-description">Choose your college portal, then import its assignment calendar (.ics) or CSV export. Reimport an updated export to refresh deadlines.</p><blockquote class="page-quote deadline-quote"><p>Excuses don&#8217;t win championships.</p><cite>Harvey Specter &#183; <em>Suits</em></cite></blockquote>
             <div class="quick-tasks-list" id="quickUpcomingTasks">
               <!-- Dynamically populated -->
             </div>
@@ -405,6 +405,7 @@
 
       <!-- ================= 3. TIME TRACKER & POMODORO ================= -->
       <section id="tab-timer" class="tab-panel">
+        <blockquote class="page-quote timer-opening-quote"><p>I don&#8217;t take meetings. I set them.</p><cite>Harvey Specter &#183; <em>Suits</em></cite></blockquote>
         <div class="timer-layout">
           <!-- Main Timer Display Box -->
           <div class="timer-main-card">

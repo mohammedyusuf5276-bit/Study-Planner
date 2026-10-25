@@ -2514,7 +2514,15 @@
     });
   }
 
+  function updateWelcomeGreeting() {
+    const greeting = document.getElementById('welcomeGreeting');
+    if (!greeting) return;
+    const name = (activeUser?.displayName || activeUser?.email?.split('@')[0] || '').trim();
+    greeting.textContent = name ? `Welcome, ${name}. Let's make this session count.` : `Welcome to StudyFlow. Let's make this session count.`;
+  }
+
   function updateAccountName() {
+    updateWelcomeGreeting();
     const accountName = document.getElementById('accountName');
     if (accountName && activeUser) {
       accountName.textContent = activeUser.displayName || activeUser.email.split('@')[0];
